@@ -15,11 +15,14 @@
     "test": "jest --watchAll=false"
   },
   "dependencies": {
+    "@react-native-async-storage/async-storage": "2.1.2",
     "expo": "53.0.27",
     "expo-constants": "~17.1.8",
+    "expo-haptics": "~14.1.4",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
-    "react-native": "0.79.6"
+    "react-native": "0.79.6",
+    "react-native-safe-area-context": "5.4.0"
   },
   "private": true,
   "devDependencies": {

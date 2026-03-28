@@ -1,10 +1,5 @@
 import { CLUES_REMOVED } from '../src/game/constants';
-import {
-  boardsEqual,
-  cloneBoard,
-  generatePuzzle,
-  isValidSolvedBoard,
-} from '../src/game/engine';
+import { boardsEqual, cloneBoard, generatePuzzle, isValidSolvedBoard } from '../src/game/engine';
 import type { Difficulty } from '../src/game/types';
 
 describe('Sudoku engine', () => {

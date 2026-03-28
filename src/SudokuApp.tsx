@@ -45,16 +45,19 @@ export function SudokuApp() {
   const S = settings;
   const theme = makeTheme(S.dark, S.accent);
 
-  const pushToasts = useCallback((items: { tid: number; title: string; desc: string; xp: number }[]) => {
-    if (!items.length) return;
-    setToasts((q) => [...q.slice(-2), ...items.map((i) => ({ ...i }))]);
-    for (const t of items) {
-      const tid = t.tid;
-      setTimeout(() => {
-        setToasts((q) => q.filter((x) => x.tid !== tid));
-      }, 3800);
-    }
-  }, []);
+  const pushToasts = useCallback(
+    (items: { tid: number; title: string; desc: string; xp: number }[]) => {
+      if (!items.length) return;
+      setToasts((q) => [...q.slice(-2), ...items.map((i) => ({ ...i }))]);
+      for (const t of items) {
+        const tid = t.tid;
+        setTimeout(() => {
+          setToasts((q) => q.filter((x) => x.tid !== tid));
+        }, 3800);
+      }
+    },
+    [],
+  );
 
   const handleSolved = useCallback(
     (meta?: { mistakes?: number; hintsUsed?: number }) => {

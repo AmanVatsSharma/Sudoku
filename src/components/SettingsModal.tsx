@@ -48,7 +48,10 @@ export function SettingsModal({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={[styles.sheet, { backgroundColor: T.bgC, borderColor: T.bor }]} onPress={() => {}}>
+        <Pressable
+          style={[styles.sheet, { backgroundColor: T.bgC, borderColor: T.bor }]}
+          onPress={() => {}}
+        >
           <Text style={[styles.h, { color: T.txt }]}>Settings</Text>
           <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
             <Row label="Dark mode" T={T}>
@@ -78,7 +81,10 @@ export function SettingsModal({
                     onPress={() => setAccent(ac.id)}
                     style={[
                       styles.accentBtn,
-                      { borderColor: active ? col : T.bor, backgroundColor: active ? `${col}22` : T.sur },
+                      {
+                        borderColor: active ? col : T.bor,
+                        backgroundColor: active ? `${col}22` : T.sur,
+                      },
                     ]}
                   >
                     <View style={[styles.dot, { backgroundColor: col }]} />

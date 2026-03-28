@@ -61,17 +61,26 @@ export function GameScreen({
   return (
     <View style={[styles.root, { backgroundColor: T.bg }]}>
       {game.paused ? (
-        <Pressable style={[styles.pauseOverlay, { backgroundColor: `${T.bg}EC` }]} onPress={() => game.setPaused(false)}>
+        <Pressable
+          style={[styles.pauseOverlay, { backgroundColor: `${T.bg}EC` }]}
+          onPress={() => game.setPaused(false)}
+        >
           <Text style={{ fontSize: 56 }}>⏸</Text>
           <Text style={[styles.pauseH, { color: T.txt }]}>Paused</Text>
-          <Pressable style={[styles.resume, { backgroundColor: T.acc }]} onPress={() => game.setPaused(false)}>
+          <Pressable
+            style={[styles.resume, { backgroundColor: T.acc }]}
+            onPress={() => game.setPaused(false)}
+          >
             <Text style={styles.resumeTxt}>Resume →</Text>
           </Pressable>
         </Pressable>
       ) : null}
 
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 20 }]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 20 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.top}>
@@ -128,21 +137,36 @@ export function GameScreen({
           <View style={[styles.progBar, { backgroundColor: T.sur }]}>
             <View style={[styles.progFill, { width: `${filledPct}%`, backgroundColor: T.acc }]} />
           </View>
-          <Text style={{ color: T.txM, fontWeight: '700', fontSize: 11, minWidth: 32 }}>{filledPct}%</Text>
+          <Text style={{ color: T.txM, fontWeight: '700', fontSize: 11, minWidth: 32 }}>
+            {filledPct}%
+          </Text>
         </View>
 
         <View style={styles.actions}>
           <Pressable
-            style={[styles.chip, { backgroundColor: game.noteMode ? T.acc : T.sur, borderColor: T.bor }]}
+            style={[
+              styles.chip,
+              { backgroundColor: game.noteMode ? T.acc : T.sur, borderColor: T.bor },
+            ]}
             onPress={() => game.setNoteMode(!game.noteMode)}
           >
             <Text style={{ color: game.noteMode ? '#fff' : T.txt, fontWeight: '800' }}>Notes</Text>
           </Pressable>
-          <Pressable style={[styles.chip, { backgroundColor: T.sur, borderColor: T.bor }]} onPress={() => game.undo({ puzzle, solution, given })}>
+          <Pressable
+            style={[styles.chip, { backgroundColor: T.sur, borderColor: T.bor }]}
+            onPress={() => game.undo({ puzzle, solution, given })}
+          >
             <Text style={{ color: T.txt, fontWeight: '800' }}>Undo</Text>
           </Pressable>
           <Pressable
-            style={[styles.chip, { backgroundColor: T.sur, borderColor: T.bor, opacity: game.hintsUsed >= 3 ? 0.4 : 1 }]}
+            style={[
+              styles.chip,
+              {
+                backgroundColor: T.sur,
+                borderColor: T.bor,
+                opacity: game.hintsUsed >= 3 ? 0.4 : 1,
+              },
+            ]}
             disabled={game.hintsUsed >= 3}
             onPress={() => game.applyHint({ puzzle, solution, given, onSolved })}
           >

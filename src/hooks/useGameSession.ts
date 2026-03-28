@@ -180,9 +180,7 @@ export function useGameSession() {
     setBoard(cloneBoard(r.board));
     setNotes(cloneNotes(r.notes));
     setSelection(null);
-    setHistory(
-      r.history.map((h) => ({ board: cloneBoard(h.board), notes: cloneNotes(h.notes) })),
-    );
+    setHistory(r.history.map((h) => ({ board: cloneBoard(h.board), notes: cloneNotes(h.notes) })));
     setNoteMode(r.noteMode);
     setMistakes(r.mistakes);
     setHintsUsed(r.hintsUsed);
@@ -388,14 +386,12 @@ export function useGameSession() {
   );
 
   const applyHint = useCallback(
-    (
-      opts: {
-        puzzle: Board;
-        solution: Board;
-        given: boolean[][];
-        onSolved: (meta?: { mistakes?: number; hintsUsed?: number }) => void;
-      },
-    ) => {
+    (opts: {
+      puzzle: Board;
+      solution: Board;
+      given: boolean[][];
+      onSolved: (meta?: { mistakes?: number; hintsUsed?: number }) => void;
+    }) => {
       if (hintsUsed >= 3 || !selection || !board || !notes) return;
       const [r, c] = selection;
       if (opts.given[r]![c] || board[r]![c] !== 0) return;
@@ -506,8 +502,7 @@ export function useGameSession() {
     applyHint,
     digitRemaining,
     filledCount,
-    isConflict: (r: number, c: number) =>
-      board && board[r]![c] ? isConflict(board, r, c) : false,
+    isConflict: (r: number, c: number) => (board && board[r]![c] ? isConflict(board, r, c) : false),
   };
 }
 

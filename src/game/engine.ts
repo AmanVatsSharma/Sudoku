@@ -83,8 +83,7 @@ export function isConflict(board: Board, r: number, c: number): boolean {
   const br = Math.floor(r / 3) * 3;
   const bc = Math.floor(c / 3) * 3;
   for (let x = br; x < br + 3; x++)
-    for (let y = bc; y < bc + 3; y++)
-      if ((x !== r || y !== c) && board[x]![y] === v) return true;
+    for (let y = bc; y < bc + 3; y++) if ((x !== r || y !== c) && board[x]![y] === v) return true;
   return false;
 }
 
@@ -99,8 +98,7 @@ export function isValidSolvedBoard(board: Board): boolean {
 }
 
 export function boardsEqual(a: Board, b: Board): boolean {
-  for (let r = 0; r < 9; r++)
-    for (let c = 0; c < 9; c++) if (a[r]![c] !== b[r]![c]) return false;
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (a[r]![c] !== b[r]![c]) return false;
   return true;
 }
 
@@ -112,10 +110,6 @@ export function toggleNote(cellMask: number, digit: number): number {
 
 export function hasNote(cellMask: number, digit: number): boolean {
   return (cellMask & DIGIT_BIT(digit)) !== 0;
-}
-
-export function clearCellNotes(_mask: number): number {
-  return 0;
 }
 
 /** Remove digit from all notes in same row, column, and box */
@@ -133,7 +127,6 @@ export function autoRemoveNotesFromPlacement(
   }
   const br = Math.floor(r / 3) * 3;
   const bc = Math.floor(c / 3) * 3;
-  for (let x = br; x < br + 3; x++)
-    for (let y = bc; y < bc + 3; y++) nn[x]![y] = nn[x]![y]! & ~bit;
+  for (let x = br; x < br + 3; x++) for (let y = bc; y < bc + 3; y++) nn[x]![y] = nn[x]![y]! & ~bit;
   return nn;
 }

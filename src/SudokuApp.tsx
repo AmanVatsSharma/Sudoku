@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Alert, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
 import { ToastStack, type ToastItem } from './components/ToastStack';
@@ -7,6 +7,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { StatsModal } from './components/StatsModal';
 import { usePersistedApp, useProfile } from './context/AppPersistProvider';
 import { calcXP } from './game/constants';
+import type { AchievementRarity } from './game/achievements';
 import type { Difficulty } from './game/types';
 import { useGameSession } from './hooks/useGameSession';
 import { HomeScreen } from './screens/HomeScreen';
@@ -46,7 +47,16 @@ export function SudokuApp() {
   const theme = makeTheme(S.dark, S.accent);
 
   const pushToasts = useCallback(
-    (items: { tid: number; title: string; desc: string; xp: number }[]) => {
+    (
+      items: {
+        tid: number;
+        title: string;
+        desc: string;
+        xp: number;
+        rarity: AchievementRarity;
+        icon: string;
+      }[],
+    ) => {
       if (!items.length) return;
       setToasts((q) => [...q.slice(-2), ...items.map((i) => ({ ...i }))]);
       for (const t of items) {
@@ -76,6 +86,8 @@ export function SudokuApp() {
           title: g.title,
           desc: g.desc,
           xp: g.xp,
+          rarity: g.rarity,
+          icon: g.icon,
         })),
       );
       setWinData({
@@ -149,8 +161,22 @@ export function SudokuApp() {
           autoRm={S.autoRm}
           showClock={S.showClock}
           onHome={() => {
-            game.exitToMenu();
-            setScreen('home');
+            const leave = () => {
+              game.exitToMenu();
+              setScreen('home');
+            };
+            if (game.hasMeaningfulProgress) {
+              Alert.alert(
+                'Leave game?',
+                'Your progress will be saved. You can tap Continue on the home screen to resume.',
+                [
+                  { text: 'Keep playing', style: 'cancel' },
+                  { text: 'Leave', style: 'destructive', onPress: leave },
+                ],
+              );
+            } else {
+              leave();
+            }
           }}
           onSettings={() => setShowSettings(true)}
           onSolved={handleSolved}
@@ -164,6 +190,7 @@ export function SudokuApp() {
           win={winData}
           level={level}
           xp={xp}
+          rank={rank}
           onReplay={() => {
             const d = winData.diff;
             setWinData(null);

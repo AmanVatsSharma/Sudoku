@@ -9,6 +9,7 @@ import type { CellSelection } from '../hooks/useGameSession';
 type Props = {
   T: ThemeTokens;
   board: Board;
+  solution: Board;
   given: boolean[][];
   notes: NotesGrid;
   selection: CellSelection | null;
@@ -51,6 +52,7 @@ function NoteMarks({ mask, size, color }: { mask: number; size: number; color: s
 export const SudokuGrid = memo(function SudokuGrid({
   T,
   board,
+  solution,
   given,
   notes,
   selection,
@@ -99,17 +101,36 @@ export const SudokuGrid = memo(function SudokuGrid({
             const colDone = doneCols.has(c);
             const bDone = boxDone.get(boxKey);
 
+            let related = false;
+            if (selection != null && !selected) {
+              const [sr, sc] = selection;
+              const sameBox =
+                Math.floor(r / 3) === Math.floor(sr / 3) &&
+                Math.floor(c / 3) === Math.floor(sc / 3);
+              related = r === sr || c === sc || sameBox;
+            }
+
             const bg = err
               ? T.cCon
               : selected
                 ? T.cSel
                 : same
                   ? T.cSam
-                  : rowDone || colDone || bDone
+                  : related
                     ? T.cRel
-                    : flash
+                    : rowDone || colDone || bDone
                       ? T.aD
-                      : 'transparent';
+                      : flash
+                        ? T.aD
+                        : 'transparent';
+
+            let digitColor = T.txt;
+            if (val !== 0) {
+              if (isGiven) digitColor = T.gClr;
+              else if (showErr && err) digitColor = T.eClr;
+              else if (val === solution[r]![c]) digitColor = T.pClr;
+              else digitColor = T.eClr;
+            }
 
             return (
               <Pressable
@@ -136,7 +157,7 @@ export const SudokuGrid = memo(function SudokuGrid({
                     style={[
                       styles.digit,
                       {
-                        color: isGiven ? T.gClr : err ? T.eClr : T.txt,
+                        color: digitColor,
                         fontWeight: isGiven ? '800' : '600',
                         fontSize: cellSize * 0.42,
                       },
@@ -145,7 +166,7 @@ export const SudokuGrid = memo(function SudokuGrid({
                     {val}
                   </Text>
                 ) : (
-                  <NoteMarks mask={notes[r]![c]!} size={cellSize} color={T.txM} />
+                  <NoteMarks mask={notes[r]![c]!} size={cellSize} color={T.acc} />
                 )}
               </Pressable>
             );

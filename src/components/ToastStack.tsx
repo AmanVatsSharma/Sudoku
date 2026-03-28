@@ -13,10 +13,7 @@ export function ToastStack({ toasts, T }: { toasts: ToastItem[]; T: ThemeTokens 
   return (
     <View style={styles.wrap} pointerEvents="none">
       {toasts.slice(-2).map((t) => (
-        <View
-          key={t.tid}
-          style={[styles.card, { backgroundColor: T.bgC, borderColor: T.bor }]}
-        >
+        <View key={t.tid} style={[styles.card, { backgroundColor: T.bgC, borderColor: T.bor }]}>
           <Text style={[styles.title, { color: T.txt }]}>{t.title}</Text>
           <Text style={[styles.desc, { color: T.txM }]}>{t.desc}</Text>
           <Text style={[styles.xp, { color: T.acc }]}>+{t.xp} XP</Text>

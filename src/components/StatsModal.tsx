@@ -73,7 +73,9 @@ export function StatsModal({
               const best = bests[d];
               return (
                 <View key={d} style={styles.bestRow}>
-                  <Text style={{ color: T.txt, fontWeight: '700' }}>{DIFFICULTY_META[d].label}</Text>
+                  <Text style={{ color: T.txt, fontWeight: '700' }}>
+                    {DIFFICULTY_META[d].label}
+                  </Text>
                   <Text style={{ color: T.acc, fontWeight: '700' }}>
                     {best !== undefined ? formatTime(best) : '—'}
                   </Text>
@@ -87,7 +89,9 @@ export function StatsModal({
             ) : (
               solvHist.map((h, i) => (
                 <View key={i} style={styles.histRow}>
-                  <Text style={{ color: T.txt, fontWeight: '600' }}>{DIFFICULTY_META[h.diff].label}</Text>
+                  <Text style={{ color: T.txt, fontWeight: '600' }}>
+                    {DIFFICULTY_META[h.diff].label}
+                  </Text>
                   <Text style={{ color: T.txM }}>
                     {h.time} · ✕{h.mistakes} · +{h.xp} XP
                   </Text>

@@ -64,8 +64,7 @@ export const SudokuGrid = memo(function SudokuGrid({
   isConflict,
   cellSize,
 }: Props) {
-  const selVal =
-    selection != null ? board[selection[0]]![selection[1]]! : null;
+  const selVal = selection != null ? board[selection[0]]![selection[1]]! : null;
 
   const boxDone = useMemo(() => {
     const m = new Map<string, boolean>();

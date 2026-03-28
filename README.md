@@ -1,33 +1,62 @@
 # Ultimatum Sudoku
 
+[![CI](https://github.com/AmanVatsSharma/Sudoku/actions/workflows/ci.yml/badge.svg)](https://github.com/AmanVatsSharma/Sudoku/actions/workflows/ci.yml)
 [![Expo](https://img.shields.io/badge/Expo-SDK%2053-000020?style=flat&logo=expo)](https://docs.expo.dev/)
 [![React Native](https://img.shields.io/badge/React%20Native-0.79-61DAFB?style=flat&logo=react)](https://reactnative.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Classic **9×9 Sudoku** for **Android** and **iOS**, with progression, achievements, and theming. Built with [Expo](https://expo.dev/) and React Native. The app works **offline**; progress stays on-device (AsyncStorage). In [`app.config.ts`](app.config.ts), `name` is **Sudoku Ultimatum** and `slug` is **sudoku-ultimatum**.
+**Ultimatum Sudoku** is a feature-complete, offline-first **9×9 Sudoku** game for **Android** and **iOS**, built with [Expo](https://expo.dev/) and React Native. Progress, settings, and achievements stay on the device ([AsyncStorage](https://github.com/react-native-async-storage/async-storage)); no game data is sent to external servers.
+
+Display name **Sudoku Ultimatum**, Expo slug `sudoku-ultimatum`, Android package `dev.sudoku.ultimatum` — see [`app.config.ts`](app.config.ts).
+
+---
+
+## Download (Android)
+
+| Artifact                                                                                  | Description                                                            |
+| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| [**Sudoku-Ultimatum-1.0.0-arm64-v8a.apk**](releases/Sudoku-Ultimatum-1.0.0-arm64-v8a.apk) | Release-style APK (**arm64-v8a**). For most modern phones and tablets. |
+
+**Install:** transfer the APK to your device, enable installing from your file manager or browser if Android asks, then open the file to install.
+
+**Signing:** this build uses the default template keystore suitable for **trying the app** and sideloading. For **Google Play**, build and sign with your own upload key or use [EAS Submit](https://docs.expo.dev/submit/introduction/).
+
+**Other CPU ABIs:** build locally or with EAS (see [Building](#building) below).
+
+---
 
 ## Features
 
-- **Five difficulties** — Easy through **Ultimatum** (tuned clue removal for each tier).
+- **Five difficulties** — Easy through **Ultimatum** (tuned clue removal per tier).
 - **Notes**, **undo**, and up to **three hints** per puzzle.
-- **XP** and **levels** with a **rank** ladder (Novice → Ultimatum).
-- **Achievements** — e.g. first solve, flawless run, no hints, speed on Easy, Expert / Ultimatum clears, streaks, perfect Expert.
-- **Streaks**, **best times** per difficulty, **solve history**, and **resume** for in-progress games.
-- **Light / dark** mode and **accent** color themes.
-- **Settings** — highlight matching digits, show conflicts, auto-remove pencil marks, timer visibility.
-- **Pause** overlay, **haptic** feedback, and an error boundary for resilience.
+- **XP**, **levels**, and **ranks** (Novice → Ultimatum).
+- **Achievements** — first solve, flawless run, no hints, speed on Easy, Expert / Ultimatum clears, streaks, perfect Expert.
+- **Streaks**, **best times**, **solve history**, and **resume** for in-progress games.
+- **Light / dark** themes and **accent** colors.
+- **Settings** — matching highlights, conflict display, auto-clear pencil marks, timer visibility.
+- **Pause**, **haptics**, and an **error boundary** for stability.
 
-## Getting started
+---
 
-**Prerequisites:** Node.js (LTS recommended), npm, and the [Expo dev environment](https://docs.expo.dev/get-started/set-up-your-environment/) (Android Studio / Xcode for emulators or physical devices).
+## Tech stack
+
+- **Expo SDK 53**, **React Native 0.79**, **TypeScript**
+- **State & persistence:** React hooks, AsyncStorage, validated schemas under [`src/persistence/`](src/persistence/)
+- **CI:** GitHub Actions — lint, Prettier, `tsc`, Jest ([`.github/workflows/ci.yml`](.github/workflows/ci.yml))
+
+---
+
+## Development
+
+**Prerequisites:** Node.js (LTS recommended), npm, and the [Expo environment](https://docs.expo.dev/get-started/set-up-your-environment/) if you use simulators or devices.
 
 ```bash
 npm install
 npm start
 ```
 
-Then open the dev client: press `a` (Android), `i` (iOS), or scan the QR code with [Expo Go](https://expo.dev/go).
+Then press `a` (Android), `i` (iOS), or use [Expo Go](https://expo.dev/go). Optional:
 
 ```bash
 npm run android
@@ -40,31 +69,30 @@ npm run web
 ```bash
 npm run lint
 npm run typecheck
-npm test
-```
-
-**Formatting (optional):**
-
-```bash
-npm run format
 npm run format:check
+CI=true npm test
 ```
 
 Before a release, run `npx expo-doctor` and fix any reported issues.
 
+---
+
 ## Project layout
 
-- [`app.config.ts`](app.config.ts) — Expo app configuration (icons, splash, platforms).
-- [`src/App.tsx`](src/App.tsx) — Root component.
-- [`src/screens/`](src/screens/) — Home, game, win flows.
-- [`src/components/`](src/components/) — Grid, modals, toasts, error boundary.
-- [`src/game/`](src/game/) — Engine, types, constants, achievements.
-- [`src/hooks/useGameSession.ts`](src/hooks/useGameSession.ts) — Active puzzle state and actions.
-- [`src/persistence/`](src/persistence/) — AsyncStorage schema and load/save.
-- [`src/context/AppPersistProvider.tsx`](src/context/AppPersistProvider.tsx) — Global persisted settings and progression.
-- [`src/theme/tokens.ts`](src/theme/tokens.ts) — Theme and accent tokens.
-- [`assets/`](assets/) — Icons and splash assets.
-- [`legacy/`](legacy/) — Original single-file prototype (see below).
+| Path                                                         | Role                                             |
+| ------------------------------------------------------------ | ------------------------------------------------ |
+| [`app.config.ts`](app.config.ts)                             | Expo config (name, icons, Android package, etc.) |
+| [`src/App.tsx`](src/App.tsx)                                 | App root                                         |
+| [`src/SudokuApp.tsx`](src/SudokuApp.tsx)                     | Navigation / screen flow                         |
+| [`src/screens/`](src/screens/)                               | Home, game, win                                  |
+| [`src/components/`](src/components/)                         | Grid, modals, toasts, error boundary             |
+| [`src/game/`](src/game/)                                     | Engine, types, achievements                      |
+| [`src/hooks/useGameSession.ts`](src/hooks/useGameSession.ts) | Active game session                              |
+| [`src/persistence/`](src/persistence/)                       | Storage schema and migrations                    |
+| [`assets/`](assets/)                                         | Icons and splash                                 |
+| [`legacy/UltimatumSudoku.jsx`](legacy/UltimatumSudoku.jsx)   | Original one-file web prototype (reference)      |
+
+---
 
 ## Architecture
 
@@ -80,50 +108,57 @@ flowchart LR
   Persist --> Screens
 ```
 
-`AppProviders` wraps the tree with an error boundary, safe areas, and persistence. Gameplay logic runs through `useGameSession`; long-term data goes through `src/persistence/`.
+Gameplay runs through **`useGameSession`**; long-term data flows through **`src/persistence/`** with validation. The **puzzle generator** ensures a **unique solution** (unlike the legacy prototype’s simple cell removal). Details are in [`src/game/engine.ts`](src/game/engine.ts).
 
-## Building for the stores
+---
 
-Production binaries usually use [EAS Build](https://docs.expo.dev/build/introduction/). Configure bundle identifiers / package names, signing, and `eas.json` per Expo’s [Android](https://docs.expo.dev/submit/android/) and [iOS](https://docs.expo.dev/submit/ios/) submit guides — those steps change often, so this repo links to the docs instead of duplicating them.
+## Building
 
-For Android Play releases, set your own `android.package` in `app.config.ts`, bump `version` (and Android version code as needed), then run EAS production builds and submit the generated artifact.
+### EAS (cloud)
 
-**APK (sideload or internal testing):** This repo’s [`eas.json`](eas.json) `preview` profile builds an **APK** (`android.buildType: "apk"`). Install [EAS CLI](https://docs.expo.dev/build/setup/), run `eas login`, then:
+Production workflows typically use [EAS Build](https://docs.expo.dev/build/introduction/). For an **APK** for testing or sideloading, after `eas login`:
 
 ```bash
 eas build --profile preview --platform android
 ```
 
-When the cloud build finishes, download the `.apk` from the Expo dashboard and install it on your device. In CI, use an [`EXPO_TOKEN`](https://docs.expo.dev/accounts/programmatic-access/) instead of interactive login.
+The [`preview`](eas.json) profile is set to `android.buildType: "apk"`. **Production** on Play uses an **AAB** (`production` profile). See Expo’s [Android submit](https://docs.expo.dev/submit/android/) guide for store setup.
 
-### Local Android APK (Gradle on your machine)
+### Local Android APK (Gradle)
 
-You can produce a release APK without EAS if you have the **Android SDK**, **JDK 17** (React Native’s tooling does not support JDK 25 yet), and a few GB of disk space.
-
-1. Generate native projects (once, or after dependency changes): `npx expo prebuild --platform android`
-2. Point Gradle at the SDK: create `android/local.properties` with `sdk.dir=/absolute/path/to/Android/Sdk` (or set `ANDROID_HOME`).
-3. Install SDK components matching the Expo/RN versions in the build log (for example API **35**, **build-tools 35.0.0**, **NDK 27.1.12297006**) via `sdkmanager`.
-4. From `android/`, build (example: **arm64-v8a** only for a faster artifact):
+If you have **Android SDK** and **JDK 17**, you can run **`npx expo prebuild --platform android`**, point **`android/local.properties`** at your SDK (`sdk.dir=...`), install the API / NDK versions Gradle prints, then:
 
 ```bash
 export JAVA_HOME=/path/to/jdk-17
+cd android
 ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
 ```
 
-The APK is written to `android/app/build/outputs/apk/release/app-release.apk`. The default release signing in this template uses the debug keystore (fine for sideloading; use your own keystore for Play).
+Output: `android/app/build/outputs/apk/release/app-release.apk`. Use your own keystore for Play.
+
+---
 
 ## Privacy
 
-The app does not send game data to remote servers. Settings and progress remain on the device.
+No remote servers are used for gameplay data. Settings and progress remain on the device.
+
+---
 
 ## Contributing
 
-Issues and pull requests are welcome. Before opening a PR, run `npm run lint` and `npm test`, and keep changes focused on the problem you are solving.
+Contributions are welcome. Please read [**CONTRIBUTING.md**](CONTRIBUTING.md) for guidelines, the PR checklist (lint, typecheck, tests), and how to report issues.
+
+- **Issues:** [github.com/AmanVatsSharma/Sudoku/issues](https://github.com/AmanVatsSharma/Sudoku/issues)
+- **Discussions:** use Issues for now unless the repository enables GitHub Discussions.
+
+Whether you fix a bug, add a test, improve accessibility, or clarify documentation, your help is appreciated.
+
+---
 
 ## Legacy prototype
 
-[`legacy/UltimatumSudoku.jsx`](legacy/UltimatumSudoku.jsx) is the earlier **all-in-one** React prototype. The shipping mobile app is the TypeScript/Expo project under `src/`; it preserves the same design goals (difficulties, XP, ranks, achievements, themes) in a modular layout.
+[`legacy/UltimatumSudoku.jsx`](legacy/UltimatumSudoku.jsx) is the earlier all-in-one React prototype. The shipping app under **`src/`** keeps the same design goals in a modular, typed codebase.
 
-## License
+---
 
-Licensed under the [MIT License](LICENSE).
+MIT License — see [LICENSE](LICENSE).

@@ -1,12 +1,12 @@
 import type { ExpoConfig } from 'expo/config';
 
 const config: ExpoConfig = {
-  name: 'Sudoku',
-  slug: 'Sudoku',
+  name: 'Sudoku Ultimatum',
+  slug: 'sudoku-ultimatum',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
-  userInterfaceStyle: 'light',
+  userInterfaceStyle: 'automatic',
   scheme: 'sudoku',
   splash: {
     image: './assets/splash-icon.png',
@@ -17,6 +17,8 @@ const config: ExpoConfig = {
     supportsTablet: true,
   },
   android: {
+    package: 'dev.sudoku.ultimatum',
+    versionCode: 1,
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
       foregroundImage: './assets/android-icon-foreground.png',

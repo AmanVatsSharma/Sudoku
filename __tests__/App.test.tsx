@@ -6,7 +6,7 @@ describe('App', () => {
   it('loads and shows home content', async () => {
     render(<App />);
     await waitFor(() => {
-      expect(screen.getByText(/Ultimatum/i)).toBeTruthy();
+      expect(screen.getAllByText(/Ultimatum/i).length).toBeGreaterThan(0);
     });
   });
 });

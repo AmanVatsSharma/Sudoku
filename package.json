@@ -1,7 +1,8 @@
 {
   "name": "sudoku",
   "version": "1.0.0",
-  "description": "Sudoku (Expo). Before release run: npx expo-doctor",
+  "description": "Offline Sudoku game (Expo / React Native). Run `npx expo-doctor` before release.",
+  "license": "MIT",
   "main": "index.js",
   "scripts": {
     "start": "expo start",
@@ -24,7 +25,7 @@
     "react-native": "0.79.6",
     "react-native-safe-area-context": "5.4.0"
   },
-  "private": true,
+  "private": false,
   "devDependencies": {
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "^30.0.0",

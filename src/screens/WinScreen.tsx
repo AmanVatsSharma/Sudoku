@@ -19,6 +19,7 @@ type Props = {
   win: WinPayload;
   level: number;
   xp: number;
+  rank: string;
   onReplay: () => void;
   onHome: () => void;
   onNext: () => void;
@@ -26,43 +27,76 @@ type Props = {
 
 const ORDER: Difficulty[] = ['easy', 'medium', 'hard', 'expert', 'ultimatum'];
 
-export function WinScreen({ dark, accent, win, level, xp, onReplay, onHome, onNext }: Props) {
+function starCount(mistakes: number): number {
+  if (mistakes === 0) return 3;
+  if (mistakes <= 3) return 2;
+  return 1;
+}
+
+export function WinScreen({ dark, accent, win, level, xp, rank, onReplay, onHome, onNext }: Props) {
   const T = makeTheme(dark, accent);
   const insets = useSafeAreaInsets();
   const idx = ORDER.indexOf(win.diff);
   const canNext = idx < ORDER.length - 1;
+  const dc = dark ? DIFFICULTY_META[win.diff].dColor : DIFFICULTY_META[win.diff].color;
+  const stars = starCount(win.mistakes);
+  const starStr = '⭐'.repeat(stars);
 
   return (
-    <View style={[styles.root, { backgroundColor: T.bg, paddingTop: insets.top + 40 }]}>
+    <View style={[styles.root, { backgroundColor: T.bg, paddingTop: insets.top + 28 }]}>
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 280,
+          backgroundColor: 'transparent',
+        }}
+        pointerEvents="none"
+      />
       <Text style={{ fontSize: 64, textAlign: 'center' }}>🎉</Text>
+      <Text style={[styles.kicker, { color: dc }]}>
+        {DIFFICULTY_META[win.diff].label.toUpperCase()} COMPLETE
+      </Text>
       <Text style={[styles.h, { color: T.txt }]}>Solved!</Text>
-      <Text style={[styles.sub, { color: T.acc }]}>{DIFFICULTY_META[win.diff].label}</Text>
+      <Text style={[styles.stars, { color: T.yel }]}>{starStr}</Text>
 
-      <View style={[styles.card, { backgroundColor: T.bgC, borderColor: T.bor }]}>
-        <Row label="Time" value={win.timeLabel} T={T} />
-        <Row label="Mistakes" value={String(win.mistakes)} T={T} />
-        <Row label="Hints used" value={String(win.hints)} T={T} />
-        <Row label="XP earned" value={`+${win.xpEarned}`} T={T} highlight />
+      <View style={[styles.xpBand, { backgroundColor: `${dc}22`, borderColor: `${dc}44` }]}>
+        <Text style={{ color: dc, fontSize: 17, fontWeight: '800' }}>
+          +{win.xpEarned} XP earned
+        </Text>
+        <Text style={{ color: T.txM, fontSize: 12, marginLeft: 8 }}>
+          {rank} · Lv.{level}
+        </Text>
       </View>
 
-      <Text style={{ color: T.txM, textAlign: 'center', marginTop: 16 }}>
-        You are now <Text style={{ color: T.txt, fontWeight: '800' }}>Lv.{level}</Text> with{' '}
-        <Text style={{ color: T.acc, fontWeight: '800' }}>{xp.toLocaleString()} XP</Text>
+      <View style={styles.statsRow}>
+        <MiniStat icon="⏱" label="Time" value={win.timeLabel} T={T} />
+        <MiniStat icon="✕" label="Mistakes" value={String(win.mistakes)} T={T} />
+        <MiniStat icon="◈" label="Hints" value={String(win.hints)} T={T} />
+      </View>
+
+      <Text style={{ color: T.txM, textAlign: 'center', marginTop: 14, paddingHorizontal: 12 }}>
+        Total XP: <Text style={{ color: T.acc, fontWeight: '800' }}>{xp.toLocaleString()}</Text>
       </Text>
 
       <View style={{ flex: 1 }} />
 
-      <Pressable style={[styles.btn, { backgroundColor: T.acc }]} onPress={onReplay}>
-        <Text style={styles.btnTxt}>Play again</Text>
-      </Pressable>
       {canNext ? (
-        <Pressable
-          style={[styles.btn, { backgroundColor: T.sur, borderWidth: 1, borderColor: T.bor }]}
-          onPress={onNext}
-        >
-          <Text style={[styles.btnTxt, { color: T.txt }]}>Next difficulty →</Text>
+        <Pressable style={[styles.btnPrimary, { backgroundColor: T.acc }]} onPress={onNext}>
+          <Text style={styles.btnTxt}>Next difficulty →</Text>
         </Pressable>
       ) : null}
+      <Pressable
+        style={[
+          styles.btnSecondary,
+          { backgroundColor: T.sur, borderColor: T.bor, marginTop: canNext ? 10 : 0 },
+        ]}
+        onPress={onReplay}
+      >
+        <Text style={[styles.btnTxt, { color: T.txt }]}>Play again</Text>
+      </Pressable>
       <Pressable onPress={onHome} style={{ padding: 16 }}>
         <Text style={{ color: T.txM, textAlign: 'center', fontWeight: '700' }}>Home</Text>
       </Pressable>
@@ -71,33 +105,61 @@ export function WinScreen({ dark, accent, win, level, xp, onReplay, onHome, onNe
   );
 }
 
-function Row({
+function MiniStat({
+  icon,
   label,
   value,
   T,
-  highlight,
 }: {
+  icon: string;
   label: string;
   value: string;
   T: ReturnType<typeof makeTheme>;
-  highlight?: boolean;
 }) {
   return (
-    <View style={styles.row}>
-      <Text style={{ color: T.txM, fontWeight: '600' }}>{label}</Text>
-      <Text style={{ color: highlight ? T.acc : T.txt, fontWeight: '800', fontSize: 16 }}>
-        {value}
+    <View style={[styles.mini, { backgroundColor: T.bgC, borderColor: T.bor }]}>
+      <Text style={{ fontSize: 14 }}>{icon}</Text>
+      <Text style={{ color: T.txt, fontSize: 20, fontWeight: '800' }}>{value}</Text>
+      <Text
+        style={{
+          color: T.txM,
+          fontSize: 10,
+          fontWeight: '700',
+          textTransform: 'uppercase',
+          marginTop: 2,
+        }}
+      >
+        {label}
       </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, paddingHorizontal: 24 },
-  h: { fontSize: 28, fontWeight: '800', textAlign: 'center', marginTop: 8 },
-  sub: { fontSize: 14, fontWeight: '700', textAlign: 'center', letterSpacing: 1, marginBottom: 24 },
-  card: { borderRadius: 18, borderWidth: 1, padding: 18, gap: 12 },
-  row: { flexDirection: 'row', justifyContent: 'space-between' },
-  btn: { paddingVertical: 16, borderRadius: 16, alignItems: 'center', marginTop: 10 },
+  root: { flex: 1, paddingHorizontal: 22 },
+  kicker: {
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    marginBottom: 6,
+  },
+  h: { fontSize: 36, fontWeight: '800', textAlign: 'center', letterSpacing: -0.5 },
+  stars: { fontSize: 28, textAlign: 'center', letterSpacing: 4, marginBottom: 18 },
+  xpBand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 22,
+  },
+  statsRow: { flexDirection: 'row', gap: 10 },
+  mini: { flex: 1, borderRadius: 16, borderWidth: 1, paddingVertical: 14, alignItems: 'center' },
+  btnPrimary: { paddingVertical: 17, borderRadius: 16, alignItems: 'center' },
+  btnSecondary: { paddingVertical: 16, borderRadius: 16, alignItems: 'center', borderWidth: 1 },
   btnTxt: { color: '#fff', fontWeight: '800', fontSize: 16 },
 });

@@ -2,12 +2,7 @@ import type { AccentId } from '../theme/tokens';
 import { isValidSolvedBoard } from '../game/engine';
 import type { Board, Difficulty } from '../game/types';
 
-import type {
-  AppPersistedV1,
-  AppPersistedV2,
-  ResumeStateV1,
-  SolveHistoryEntry,
-} from './schema';
+import type { AppPersistedV1, AppPersistedV2, ResumeStateV1, SolveHistoryEntry } from './schema';
 import { PERSISTENCE_VERSION, defaultPersisted, defaultSettings } from './schema';
 
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard', 'expert', 'ultimatum'];
@@ -55,7 +50,8 @@ export function validateResume(raw: unknown): ResumeStateV1 | null {
   if (!validNotes(raw.notes)) return null;
   if (typeof raw.mistakes !== 'number' || raw.mistakes < 0 || raw.mistakes > 200) return null;
   if (typeof raw.hintsUsed !== 'number' || raw.hintsUsed < 0 || raw.hintsUsed > 3) return null;
-  if (typeof raw.timeSeconds !== 'number' || raw.timeSeconds < 0 || raw.timeSeconds > 86400 * 30) return null;
+  if (typeof raw.timeSeconds !== 'number' || raw.timeSeconds < 0 || raw.timeSeconds > 86400 * 30)
+    return null;
   if (typeof raw.noteMode !== 'boolean') return null;
   if (!Array.isArray(raw.history)) return null;
   const puzzle = raw.puzzle as Board;
@@ -159,7 +155,11 @@ export function normalizePersisted(raw: unknown): AppPersistedV2 {
 
   if (raw.v === 1) {
     const row = raw as unknown as AppPersistedV1;
-    if (typeof row.xp !== 'number' || typeof row.streak !== 'number' || typeof row.solves !== 'number') {
+    if (
+      typeof row.xp !== 'number' ||
+      typeof row.streak !== 'number' ||
+      typeof row.solves !== 'number'
+    ) {
       return base;
     }
     try {
@@ -173,7 +173,9 @@ export function normalizePersisted(raw: unknown): AppPersistedV2 {
 
   const xp = typeof raw.xp === 'number' && raw.xp >= 0 ? Math.floor(raw.xp) : 0;
   const calendarStreak =
-    typeof raw.calendarStreak === 'number' ? Math.max(0, Math.min(999, Math.floor(raw.calendarStreak))) : 0;
+    typeof raw.calendarStreak === 'number'
+      ? Math.max(0, Math.min(999, Math.floor(raw.calendarStreak)))
+      : 0;
   const lastWin =
     typeof raw.lastWinCalendarYmd === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.lastWinCalendarYmd)
       ? raw.lastWinCalendarYmd

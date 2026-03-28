@@ -118,6 +118,7 @@ export function GameScreen({
           <SudokuGrid
             T={T}
             board={game.board}
+            solution={solution}
             given={given}
             notes={game.notes}
             selection={game.selection}
@@ -153,7 +154,15 @@ export function GameScreen({
             <Text style={{ color: game.noteMode ? '#fff' : T.txt, fontWeight: '800' }}>Notes</Text>
           </Pressable>
           <Pressable
-            style={[styles.chip, { backgroundColor: T.sur, borderColor: T.bor }]}
+            style={[
+              styles.chip,
+              {
+                backgroundColor: T.sur,
+                borderColor: T.bor,
+                opacity: game.canUndo ? 1 : 0.35,
+              },
+            ]}
+            disabled={!game.canUndo}
             onPress={() => game.undo({ puzzle, solution, given })}
           >
             <Text style={{ color: T.txt, fontWeight: '800' }}>Undo</Text>
@@ -175,18 +184,29 @@ export function GameScreen({
         </View>
 
         <View style={styles.pad}>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-            <Pressable
-              key={n}
-              onPress={() => handleNumber(n)}
-              style={[styles.key, { backgroundColor: T.bgC, borderColor: T.bor }]}
-            >
-              <Text style={{ fontSize: 22, fontWeight: '800', color: T.txt }}>{n}</Text>
-              <Text style={{ fontSize: 9, color: T.txM, fontWeight: '700' }}>
-                {game.digitRemaining[n]} left
-              </Text>
-            </Pressable>
-          ))}
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => {
+            const done = game.digitRemaining[n]! <= 0 && !game.noteMode;
+            return (
+              <Pressable
+                key={n}
+                disabled={done}
+                onPress={() => handleNumber(n)}
+                style={[
+                  styles.key,
+                  {
+                    backgroundColor: game.noteMode ? T.aD : T.bgC,
+                    borderColor: game.noteMode ? T.aM : T.bor,
+                    opacity: done ? 0.22 : 1,
+                  },
+                ]}
+              >
+                <Text style={{ fontSize: 22, fontWeight: '800', color: T.txt }}>{n}</Text>
+                <Text style={{ fontSize: 9, color: T.txM, fontWeight: '700' }}>
+                  {done ? '✓' : `${game.digitRemaining[n]} left`}
+                </Text>
+              </Pressable>
+            );
+          })}
           <Pressable
             onPress={() => handleNumber(0)}
             style={[styles.keyWide, { backgroundColor: T.red }]}

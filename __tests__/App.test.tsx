@@ -1,10 +1,12 @@
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, waitFor } from '@testing-library/react-native';
 
 import App from '../src/App';
 
 describe('App', () => {
-  it('renders home placeholder', () => {
+  it('loads and shows home content', async () => {
     render(<App />);
-    expect(screen.getByText(/Open up src\/App.tsx/i)).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText(/Ultimatum/i)).toBeTruthy();
+    });
   });
 });

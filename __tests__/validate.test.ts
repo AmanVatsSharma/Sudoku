@@ -10,7 +10,14 @@ describe('normalizePersisted', () => {
       bests: {},
       unlockedAchievements: ['first'],
       solvHist: [],
-      settings: { dark: true, accent: 'blue', hlSame: true, showErr: true, autoRm: true, showClock: true },
+      settings: {
+        dark: true,
+        accent: 'blue',
+        hlSame: true,
+        showErr: true,
+        autoRm: true,
+        showClock: true,
+      },
       resume: null,
     });
     expect(out.v).toBe(2);
@@ -29,7 +36,14 @@ describe('normalizePersisted', () => {
       bests: {},
       unlockedAchievements: [],
       solvHist: [],
-      settings: { dark: true, accent: 'blue', hlSame: true, showErr: true, autoRm: true, showClock: true },
+      settings: {
+        dark: true,
+        accent: 'blue',
+        hlSame: true,
+        showErr: true,
+        autoRm: true,
+        showClock: true,
+      },
       resume: { bogus: true },
     });
     expect(out.resume).toBeNull();

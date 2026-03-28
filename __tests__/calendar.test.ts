@@ -1,8 +1,4 @@
-import {
-  isPreviousCalendarDay,
-  localCalendarYmd,
-  nextCalendarStreak,
-} from '../src/utils/calendar';
+import { isPreviousCalendarDay, localCalendarYmd, nextCalendarStreak } from '../src/utils/calendar';
 
 describe('calendar streak', () => {
   it('nextCalendarStreak increments only across consecutive local days', () => {

@@ -47,28 +47,45 @@ function fillBoard(b: Board): boolean {
   return true;
 }
 
+function candidateDigits(b: Board, r: number, c: number): number[] {
+  const out: number[] = [];
+  for (let n = 1; n <= 9; n++) if (canPlace(b, r, c, n)) out.push(n);
+  return out;
+}
+
 export function countSolutions(board: Board, cap: number): number {
   let found = 0;
   const b = cloneBoard(board);
 
   function dfs(): void {
     if (found >= cap) return;
+    let bestR = -1;
+    let bestC = -1;
+    let bestOpts: number[] | null = null;
+    let bestLen = 10;
     for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
-        if (b[r]![c] === 0) {
-          for (let n = 1; n <= 9; n++) {
-            if (canPlace(b, r, c, n)) {
-              b[r]![c] = n;
-              dfs();
-              b[r]![c] = 0;
-              if (found >= cap) return;
-            }
-          }
-          return;
+        if (b[r]![c] !== 0) continue;
+        const opts = candidateDigits(b, r, c);
+        if (opts.length === 0) return;
+        if (opts.length < bestLen) {
+          bestLen = opts.length;
+          bestR = r;
+          bestC = c;
+          bestOpts = opts;
         }
       }
     }
-    found++;
+    if (bestR < 0 || !bestOpts) {
+      found++;
+      return;
+    }
+    for (const n of shuffle([...bestOpts])) {
+      b[bestR]![bestC] = n;
+      dfs();
+      b[bestR]![bestC] = 0;
+      if (found >= cap) return;
+    }
   }
 
   dfs();

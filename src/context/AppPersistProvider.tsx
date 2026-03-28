@@ -9,7 +9,7 @@ import {
   useState,
 } from 'react';
 
-import { achievementById } from '../game/achievements';
+import { achievementById, type AchievementRarity } from '../game/achievements';
 import { XP_PER_LEVEL, calcXP, rankForLevel } from '../game/constants';
 import type { Difficulty } from '../game/types';
 import type { AppPersistedV2, AppSettingsV1, ResumeStateV1 } from '../persistence/schema';
@@ -33,6 +33,8 @@ export type GrantedAchievementToast = {
   title: string;
   desc: string;
   xp: number;
+  rarity: AchievementRarity;
+  icon: string;
 };
 
 type AppPersistContextValue = {
@@ -77,6 +79,8 @@ function computeWin(
       title: a.title,
       desc: a.desc,
       xp: a.xp,
+      rarity: a.rarity,
+      icon: a.icon,
     });
   };
 

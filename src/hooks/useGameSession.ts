@@ -489,6 +489,16 @@ export function useGameSession() {
 
   const filledCount = board ? board.flat().filter((v) => v !== 0).length : 0;
 
+  const hasMeaningfulProgress =
+    board != null &&
+    puzzle != null &&
+    (history.length > 0 ||
+      (() => {
+        for (let r = 0; r < 9; r++)
+          for (let c = 0; c < 9; c++) if (board[r]![c] !== puzzle[r]![c]) return true;
+        return false;
+      })());
+
   return {
     difficulty,
     puzzle,
@@ -518,6 +528,8 @@ export function useGameSession() {
     applyHint,
     digitRemaining,
     filledCount,
+    hasMeaningfulProgress,
+    canUndo: history.length > 0,
     isConflict: (r: number, c: number) => (board && board[r]![c] ? isConflict(board, r, c) : false),
   };
 }

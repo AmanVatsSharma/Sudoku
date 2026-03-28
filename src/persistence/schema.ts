@@ -1,7 +1,7 @@
 import type { AccentId } from '../theme/tokens';
 import type { Board, Difficulty, NotesGrid } from '../game/types';
 
-export const PERSISTENCE_VERSION = 1 as const;
+export const PERSISTENCE_VERSION = 2 as const;
 
 export type SolveHistoryEntry = {
   diff: Difficulty;
@@ -34,7 +34,7 @@ export type AppSettingsV1 = {
 };
 
 export type AppPersistedV1 = {
-  v: typeof PERSISTENCE_VERSION;
+  v: 1;
   xp: number;
   streak: number;
   solves: number;
@@ -44,6 +44,24 @@ export type AppPersistedV1 = {
   settings: AppSettingsV1;
   resume: ResumeStateV1 | null;
 };
+
+/** Persisted app state (latest). */
+export type AppPersistedV2 = {
+  v: typeof PERSISTENCE_VERSION;
+  xp: number;
+  /** Consecutive calendar days with at least one completed puzzle. */
+  calendarStreak: number;
+  /** Local date YYYY-MM-DD of last completed puzzle (win). */
+  lastWinCalendarYmd: string | null;
+  solves: number;
+  bests: Partial<Record<Difficulty, number>>;
+  unlockedAchievements: string[];
+  solvHist: SolveHistoryEntry[];
+  settings: AppSettingsV1;
+  resume: ResumeStateV1 | null;
+};
+
+export type AppPersisted = AppPersistedV2;
 
 export function defaultSettings(): AppSettingsV1 {
   return {
@@ -56,11 +74,12 @@ export function defaultSettings(): AppSettingsV1 {
   };
 }
 
-export function defaultPersisted(): AppPersistedV1 {
+export function defaultPersisted(): AppPersistedV2 {
   return {
     v: PERSISTENCE_VERSION,
     xp: 0,
-    streak: 1,
+    calendarStreak: 0,
+    lastWinCalendarYmd: null,
     solves: 0,
     bests: {},
     unlockedAchievements: [],

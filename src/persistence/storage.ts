@@ -1,37 +1,32 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import type { AppPersistedV1 } from './schema';
-import { PERSISTENCE_VERSION, defaultPersisted } from './schema';
+import type { AppPersistedV2 } from './schema';
+import { defaultPersisted } from './schema';
+import { normalizePersisted } from './validate';
 
 const STORAGE_KEY = '@sudoku/persisted_v1';
 
-function isRecord(x: unknown): x is Record<string, unknown> {
-  return typeof x === 'object' && x !== null;
-}
-
-function parsePersisted(raw: string): AppPersistedV1 | null {
-  try {
-    const data: unknown = JSON.parse(raw);
-    if (!isRecord(data)) return null;
-    if (data.v !== PERSISTENCE_VERSION) return null;
-    return data as AppPersistedV1;
-  } catch {
-    return null;
-  }
-}
-
-export async function loadPersisted(): Promise<AppPersistedV1> {
+export async function loadPersisted(): Promise<AppPersistedV2> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultPersisted();
-    const parsed = parsePersisted(raw);
-    return parsed ?? defaultPersisted();
+    let data: unknown;
+    try {
+      data = JSON.parse(raw) as unknown;
+    } catch {
+      return defaultPersisted();
+    }
+    return normalizePersisted(data);
   } catch {
     return defaultPersisted();
   }
 }
 
-export async function savePersisted(state: AppPersistedV1): Promise<void> {
-  const payload: AppPersistedV1 = { ...state, v: PERSISTENCE_VERSION };
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+export async function savePersisted(state: AppPersistedV2): Promise<void> {
+  try {
+    const payload = normalizePersisted(state);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch (err) {
+    console.error('[Sudoku] Failed to persist state', err);
+  }
 }

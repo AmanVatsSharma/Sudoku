@@ -31,7 +31,6 @@ function canPlace(b: Board, r: number, c: number, n: number): boolean {
   return true;
 }
 
-/** Fills board in-place using backtracking; board must be 9x9 zeros initially. */
 function fillBoard(b: Board): boolean {
   for (let r = 0; r < 9; r++)
     for (let c = 0; c < 9; c++)
@@ -48,21 +47,71 @@ function fillBoard(b: Board): boolean {
   return true;
 }
 
+export function countSolutions(board: Board, cap: number): number {
+  let found = 0;
+  const b = cloneBoard(board);
+
+  function dfs(): void {
+    if (found >= cap) return;
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (b[r]![c] === 0) {
+          for (let n = 1; n <= 9; n++) {
+            if (canPlace(b, r, c, n)) {
+              b[r]![c] = n;
+              dfs();
+              b[r]![c] = 0;
+              if (found >= cap) return;
+            }
+          }
+          return;
+        }
+      }
+    }
+    found++;
+  }
+
+  dfs();
+  return found;
+}
+
+const MAX_PUZZLE_REGENERATIONS = 48;
+
 export function generatePuzzle(diff: Difficulty): GeneratedPuzzle {
+  const targetRemovals = CLUES_REMOVED[diff] ?? 37;
+
+  for (let attempt = 0; attempt < MAX_PUZZLE_REGENERATIONS; attempt++) {
+    const sol = emptyBoard();
+    fillBoard(sol);
+    const puz = cloneBoard(sol);
+    const order = shuffle([...Array(81).keys()]);
+    let removed = 0;
+
+    for (const i of order) {
+      if (removed >= targetRemovals) break;
+      const r = Math.floor(i / 9);
+      const c = i % 9;
+      const saved = puz[r]![c]!;
+      puz[r]![c] = 0;
+      if (countSolutions(puz, 2) === 1) removed++;
+      else puz[r]![c] = saved;
+    }
+
+    if (removed >= targetRemovals) {
+      return { puzzle: puz, solution: cloneBoard(sol) };
+    }
+  }
+
   const sol = emptyBoard();
   fillBoard(sol);
-  const removeCount = CLUES_REMOVED[diff] ?? 37;
-  const puz = sol.map((row) => [...row]);
-  let rem = removeCount;
+  const puz = cloneBoard(sol);
+  let rem = targetRemovals;
   for (const i of shuffle([...Array(81).keys()])) {
     if (!rem) break;
     puz[Math.floor(i / 9)]![i % 9] = 0;
     rem--;
   }
-  return {
-    puzzle: puz,
-    solution: sol.map((row) => [...row]),
-  };
+  return { puzzle: puz, solution: cloneBoard(sol) };
 }
 
 export function cloneBoard(b: Board): Board {
@@ -87,7 +136,6 @@ export function isConflict(board: Board, r: number, c: number): boolean {
   return false;
 }
 
-/** True if board matches Sudoku rules (no duplicate non-zero in row/col/box) */
 export function isValidSolvedBoard(board: Board): boolean {
   for (let r = 0; r < 9; r++)
     for (let c = 0; c < 9; c++) {
@@ -112,7 +160,6 @@ export function hasNote(cellMask: number, digit: number): boolean {
   return (cellMask & DIGIT_BIT(digit)) !== 0;
 }
 
-/** Remove digit from all notes in same row, column, and box */
 export function autoRemoveNotesFromPlacement(
   notes: NotesGrid,
   r: number,

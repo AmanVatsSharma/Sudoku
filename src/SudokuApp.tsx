@@ -56,32 +56,37 @@ export function SudokuApp() {
     }
   }, []);
 
-  const handleSolved = useCallback(() => {
-    const xpE = calcXP(game.difficulty, game.mistakes, game.hintsUsed, game.timeSeconds);
-    const granted = applyWin({
-      diff: game.difficulty,
-      timeSeconds: game.timeSeconds,
-      mistakes: game.mistakes,
-      hintsUsed: game.hintsUsed,
-    });
-    pushToasts(
-      granted.map((g) => ({
-        tid: g.tid,
-        title: g.title,
-        desc: g.desc,
-        xp: g.xp,
-      })),
-    );
-    setWinData({
-      timeLabel: formatTime(game.timeSeconds),
-      rawSeconds: game.timeSeconds,
-      mistakes: game.mistakes,
-      hints: game.hintsUsed,
-      diff: game.difficulty,
-      xpEarned: xpE,
-    });
-    setTimeout(() => setScreen('win'), 700);
-  }, [applyWin, game.difficulty, game.hintsUsed, game.mistakes, game.timeSeconds, pushToasts]);
+  const handleSolved = useCallback(
+    (meta?: { mistakes?: number; hintsUsed?: number }) => {
+      const mistakes = meta?.mistakes ?? game.mistakes;
+      const hintsUsed = meta?.hintsUsed ?? game.hintsUsed;
+      const xpE = calcXP(game.difficulty, mistakes, hintsUsed, game.timeSeconds);
+      const granted = applyWin({
+        diff: game.difficulty,
+        timeSeconds: game.timeSeconds,
+        mistakes,
+        hintsUsed,
+      });
+      pushToasts(
+        granted.map((g) => ({
+          tid: g.tid,
+          title: g.title,
+          desc: g.desc,
+          xp: g.xp,
+        })),
+      );
+      setWinData({
+        timeLabel: formatTime(game.timeSeconds),
+        rawSeconds: game.timeSeconds,
+        mistakes,
+        hints: hintsUsed,
+        diff: game.difficulty,
+        xpEarned: xpE,
+      });
+      setTimeout(() => setScreen('win'), 700);
+    },
+    [applyWin, game.difficulty, game.hintsUsed, game.mistakes, game.timeSeconds, pushToasts],
+  );
 
   if (!isReady) {
     return (

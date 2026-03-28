@@ -20,7 +20,7 @@ type Props = {
   showClock: boolean;
   onHome: () => void;
   onSettings: () => void;
-  onSolved: () => void;
+  onSolved: (meta?: { mistakes?: number; hintsUsed?: number }) => void;
 };
 
 export function GameScreen({

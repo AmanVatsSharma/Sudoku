@@ -1,10 +1,10 @@
 import { AppProviders } from './providers/AppProviders';
-import { HomeScreen } from './screens/HomeScreen';
+import { SudokuApp } from './SudokuApp';
 
 export default function App() {
   return (
     <AppProviders>
-      <HomeScreen />
+      <SudokuApp />
     </AppProviders>
   );
 }

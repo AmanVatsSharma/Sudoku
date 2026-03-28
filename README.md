@@ -5,7 +5,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Classic **9×9 Sudoku** for **Android** and **iOS**, with progression, achievements, and theming. Built with [Expo](https://expo.dev/) and React Native. The app works **offline**; progress stays on-device (AsyncStorage). The native project name in Expo config is **Sudoku** ([`app.config.ts`](app.config.ts) `name` / `slug`).
+Classic **9×9 Sudoku** for **Android** and **iOS**, with progression, achievements, and theming. Built with [Expo](https://expo.dev/) and React Native. The app works **offline**; progress stays on-device (AsyncStorage). In [`app.config.ts`](app.config.ts), `name` is **Sudoku Ultimatum** and `slug` is **sudoku-ultimatum**.
 
 ## Features
 
@@ -17,10 +17,6 @@ Classic **9×9 Sudoku** for **Android** and **iOS**, with progression, achieveme
 - **Light / dark** mode and **accent** color themes.
 - **Settings** — highlight matching digits, show conflicts, auto-remove pencil marks, timer visibility.
 - **Pause** overlay, **haptic** feedback, and an error boundary for resilience.
-
-## Screenshots
-
-**Coming soon.** Add 2–4 captures under `.github/` or `docs/`, then link them here (for example `![Home](docs/screenshot-home.png)`). Until then, run the app locally (see below) to preview the UI.
 
 ## Getting started
 
@@ -91,6 +87,30 @@ flowchart LR
 Production binaries usually use [EAS Build](https://docs.expo.dev/build/introduction/). Configure bundle identifiers / package names, signing, and `eas.json` per Expo’s [Android](https://docs.expo.dev/submit/android/) and [iOS](https://docs.expo.dev/submit/ios/) submit guides — those steps change often, so this repo links to the docs instead of duplicating them.
 
 For Android Play releases, set your own `android.package` in `app.config.ts`, bump `version` (and Android version code as needed), then run EAS production builds and submit the generated artifact.
+
+**APK (sideload or internal testing):** This repo’s [`eas.json`](eas.json) `preview` profile builds an **APK** (`android.buildType: "apk"`). Install [EAS CLI](https://docs.expo.dev/build/setup/), run `eas login`, then:
+
+```bash
+eas build --profile preview --platform android
+```
+
+When the cloud build finishes, download the `.apk` from the Expo dashboard and install it on your device. In CI, use an [`EXPO_TOKEN`](https://docs.expo.dev/accounts/programmatic-access/) instead of interactive login.
+
+### Local Android APK (Gradle on your machine)
+
+You can produce a release APK without EAS if you have the **Android SDK**, **JDK 17** (React Native’s tooling does not support JDK 25 yet), and a few GB of disk space.
+
+1. Generate native projects (once, or after dependency changes): `npx expo prebuild --platform android`
+2. Point Gradle at the SDK: create `android/local.properties` with `sdk.dir=/absolute/path/to/Android/Sdk` (or set `ANDROID_HOME`).
+3. Install SDK components matching the Expo/RN versions in the build log (for example API **35**, **build-tools 35.0.0**, **NDK 27.1.12297006**) via `sdkmanager`.
+4. From `android/`, build (example: **arm64-v8a** only for a faster artifact):
+
+```bash
+export JAVA_HOME=/path/to/jdk-17
+./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
+```
+
+The APK is written to `android/app/build/outputs/apk/release/app-release.apk`. The default release signing in this template uses the debug keystore (fine for sideloading; use your own keystore for Play).
 
 ## Privacy
 

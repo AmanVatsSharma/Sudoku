@@ -245,7 +245,7 @@ export function useGameSession() {
         solution: Board;
         given: boolean[][];
         autoRm: boolean;
-        onSolved: () => void;
+        onSolved: (meta?: { mistakes?: number; hintsUsed?: number }) => void;
       },
     ) => {
       if (!selection || !board || !notes) return;
@@ -322,7 +322,7 @@ export function useGameSession() {
         setRunning(false);
         clearResumeTimer();
         replaceResume(null);
-        opts.onSolved();
+        opts.onSolved({ mistakes: nextMistakes, hintsUsed });
         return;
       }
 
@@ -393,7 +393,7 @@ export function useGameSession() {
         puzzle: Board;
         solution: Board;
         given: boolean[][];
-        onSolved: () => void;
+        onSolved: (meta?: { mistakes?: number; hintsUsed?: number }) => void;
       },
     ) => {
       if (hintsUsed >= 3 || !selection || !board || !notes) return;
@@ -431,7 +431,7 @@ export function useGameSession() {
         setRunning(false);
         clearResumeTimer();
         replaceResume(null);
-        opts.onSolved();
+        opts.onSolved({ mistakes, hintsUsed: nextHints });
         return;
       }
 

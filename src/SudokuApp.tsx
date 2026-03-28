@@ -24,7 +24,7 @@ export function SudokuApp() {
     xp,
     level,
     rank,
-    streak,
+    calendarStreak,
     solves,
     bests,
     unlockedAchievements,
@@ -129,7 +129,7 @@ export function SudokuApp() {
           level={level}
           xp={xp}
           rank={rank}
-          streak={streak}
+          streak={calendarStreak}
           solves={solves}
           bests={bests}
           unlockedCount={unlockedAchievements.length}
@@ -217,7 +217,7 @@ export function SudokuApp() {
         level={level}
         xp={xp}
         rank={rank}
-        streak={streak}
+        streak={calendarStreak}
         solves={solves}
         bests={bests}
         solvHist={solvHist}

@@ -1,7 +1,13 @@
-import * as Haptics from 'expo-haptics';
+import { AppState, type AppStateStatus } from 'react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { usePersistedApp } from '../context/AppPersistProvider';
+import {
+  safeImpactLight,
+  safeImpactMedium,
+  safeNotificationError,
+  safeSelectionAsync,
+} from '../utils/haptics';
 import {
   autoRemoveNotesFromPlacement,
   cloneBoard,
@@ -81,6 +87,16 @@ export function useGameSession() {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const runningRef = useRef(false);
+  runningRef.current = running;
+
+  useEffect(() => {
+    const onChange = (s: AppStateStatus) => {
+      if (s !== 'active' && runningRef.current) setPaused(true);
+    };
+    const sub = AppState.addEventListener('change', onChange);
+    return () => sub.remove();
+  }, []);
 
   const clearResumeTimer = () => {
     if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
@@ -258,7 +274,7 @@ export function useGameSession() {
         const mask = nn[r]![c]!;
         nn[r]![c] = toggleNote(mask, num);
         setNotes(nn);
-        void Haptics.selectionAsync();
+        void safeSelectionAsync();
         scheduleResumeSave(
           buildResumePayload(
             difficulty,
@@ -292,7 +308,7 @@ export function useGameSession() {
       if (num !== 0 && num !== opts.solution[r]![c]) {
         nextMistakes = mistakes + 1;
         setMistakes(nextMistakes);
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        void safeNotificationError();
       }
 
       setBoard(nb);
@@ -309,7 +325,7 @@ export function useGameSession() {
           });
         }, 420);
         checkComplete(nb);
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        void safeImpactLight();
       }
 
       const solved =
@@ -409,7 +425,7 @@ export function useGameSession() {
       setNotes(nn);
       const nextHints = hintsUsed + 1;
       setHintsUsed(nextHints);
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      void safeImpactMedium();
       const k = keyForCell(r, c);
       setFlashSet((p) => new Set([...p, k]));
       setTimeout(() => {

@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { ThemeTokens } from '../theme/tokens';
@@ -10,22 +9,7 @@ export type ToastItem = {
   xp: number;
 };
 
-export function ToastStack({
-  toasts,
-  T,
-  onExpire,
-}: {
-  toasts: ToastItem[];
-  T: ThemeTokens;
-  onExpire: (tid: number) => void;
-}) {
-  useEffect(() => {
-    if (!toasts.length) return;
-    const last = toasts[toasts.length - 1]!;
-    const t = setTimeout(() => onExpire(last.tid), 3800);
-    return () => clearTimeout(t);
-  }, [toasts, onExpire]);
-
+export function ToastStack({ toasts, T }: { toasts: ToastItem[]; T: ThemeTokens }) {
   return (
     <View style={styles.wrap} pointerEvents="none">
       {toasts.slice(-2).map((t) => (

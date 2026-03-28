@@ -3,7 +3,7 @@ import type { ExpoConfig } from 'expo/config';
 const config: ExpoConfig = {
   name: 'Sudoku Ultimatum',
   slug: 'sudoku-ultimatum',
-  version: '1.0.0',
+  version: '1.0.1',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
@@ -11,16 +11,16 @@ const config: ExpoConfig = {
   splash: {
     image: './assets/splash-icon.png',
     resizeMode: 'contain',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0c1224',
   },
   ios: {
     supportsTablet: true,
   },
   android: {
     package: 'dev.sudoku.ultimatum',
-    versionCode: 1,
+    versionCode: 2,
     adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
+      backgroundColor: '#0c1224',
       foregroundImage: './assets/android-icon-foreground.png',
       backgroundImage: './assets/android-icon-background.png',
       monochromeImage: './assets/android-icon-monochrome.png',
@@ -29,6 +29,7 @@ const config: ExpoConfig = {
   web: {
     favicon: './assets/favicon.png',
   },
+  plugins: [['expo-system-ui', { userInterfaceStyle: 'automatic' }]],
   extra: {
     appVariant: process.env.EXPO_PUBLIC_APP_VARIANT ?? 'development',
   },

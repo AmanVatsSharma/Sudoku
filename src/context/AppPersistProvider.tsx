@@ -12,10 +12,11 @@ import {
 import { achievementById } from '../game/achievements';
 import { XP_PER_LEVEL, calcXP, rankForLevel } from '../game/constants';
 import type { Difficulty } from '../game/types';
-import type { AppPersistedV1, AppSettingsV1, ResumeStateV1 } from '../persistence/schema';
+import type { AppPersistedV2, AppSettingsV1, ResumeStateV1 } from '../persistence/schema';
 import { defaultPersisted } from '../persistence/schema';
 import { loadPersisted, savePersisted } from '../persistence/storage';
 import { formatTime } from '../theme/tokens';
+import { localCalendarYmd, nextCalendarStreak } from '../utils/calendar';
 
 const DEBOUNCE_MS = 450;
 
@@ -35,7 +36,7 @@ export type GrantedAchievementToast = {
 };
 
 type AppPersistContextValue = {
-  persisted: AppPersistedV1;
+  persisted: AppPersistedV2;
   isReady: boolean;
   level: number;
   rank: string;
@@ -47,12 +48,18 @@ type AppPersistContextValue = {
 const AppPersistContext = createContext<AppPersistContextValue | null>(null);
 
 function computeWin(
-  p: AppPersistedV1,
+  p: AppPersistedV2,
   input: WinApplyInput,
-): { next: AppPersistedV1; granted: GrantedAchievementToast[] } {
+): { next: AppPersistedV2; granted: GrantedAchievementToast[] } {
   const solvesBefore = p.solves;
-  const streakBefore = p.streak;
   const xpEarned = calcXP(input.diff, input.mistakes, input.hintsUsed, input.timeSeconds);
+
+  const today = localCalendarYmd();
+  const { streak: calendarStreak, lastWinYmd: lastWinCalendarYmd } = nextCalendarStreak(
+    p.calendarStreak,
+    p.lastWinCalendarYmd,
+    today,
+  );
 
   const unlocked = new Set(p.unlockedAchievements);
   const granted: GrantedAchievementToast[] = [];
@@ -79,7 +86,7 @@ function computeWin(
   tryGrant('speed', input.diff === 'easy' && input.timeSeconds < 90);
   tryGrant('expert', input.diff === 'expert');
   tryGrant('ultimate', input.diff === 'ultimatum');
-  tryGrant('streak3', streakBefore >= 2);
+  tryGrant('streak3', calendarStreak >= 3);
   tryGrant('perfect', input.diff === 'expert' && input.mistakes === 0 && input.hintsUsed === 0);
 
   const prevBest = p.bests[input.diff];
@@ -88,10 +95,11 @@ function computeWin(
       ? { ...p.bests, [input.diff]: input.timeSeconds }
       : p.bests;
 
-  const next: AppPersistedV1 = {
+  const next: AppPersistedV2 = {
     ...p,
     xp: p.xp + xpDelta,
-    streak: p.streak + 1,
+    calendarStreak,
+    lastWinCalendarYmd,
     solves: p.solves + 1,
     bests,
     unlockedAchievements: [...unlocked],
@@ -111,7 +119,7 @@ function computeWin(
 }
 
 export function AppPersistProvider({ children }: { children: ReactNode }) {
-  const [persisted, setPersisted] = useState<AppPersistedV1>(defaultPersisted);
+  const [persisted, setPersisted] = useState<AppPersistedV2>(defaultPersisted);
   const [isReady, setIsReady] = useState(false);
   const persistedRef = useRef(persisted);
   persistedRef.current = persisted;
@@ -185,7 +193,6 @@ export function usePersistedApp(): AppPersistContextValue {
   return ctx;
 }
 
-/** Profile + settings accessors for screens */
 export function useProfile() {
   const { persisted, level, rank, updateSettings, applyWin, isReady } = usePersistedApp();
   return {
@@ -193,7 +200,7 @@ export function useProfile() {
     xp: persisted.xp,
     level,
     rank,
-    streak: persisted.streak,
+    calendarStreak: persisted.calendarStreak,
     solves: persisted.solves,
     bests: persisted.bests,
     unlockedAchievements: persisted.unlockedAchievements,

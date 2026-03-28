@@ -1,5 +1,5 @@
 import type { AccentId } from '../theme/tokens';
-import { boardsEqual, isValidSolvedBoard } from '../game/engine';
+import { isValidSolvedBoard } from '../game/engine';
 import type { Board, Difficulty } from '../game/types';
 
 import type {
@@ -136,16 +136,19 @@ function sanitizeSolvHist(x: unknown): SolveHistoryEntry[] {
 
 function migrateV1ToV2(row: AppPersistedV1): AppPersistedV2 {
   const resume = row.resume ? validateResume(row.resume as unknown) : null;
+  const unlocked = Array.isArray(row.unlockedAchievements)
+    ? [...new Set(row.unlockedAchievements.filter((x) => typeof x === 'string'))]
+    : [];
   return {
     v: PERSISTENCE_VERSION,
     xp: Math.max(0, Math.floor(row.xp)),
     calendarStreak: Math.max(0, Math.min(999, Math.floor(row.streak))),
     lastWinCalendarYmd: null,
     solves: Math.max(0, Math.floor(row.solves)),
-    bests: row.bests,
-    solvHist: row.solvHist.slice(0, 20),
-    unlockedAchievements: [...new Set(row.unlockedAchievements.filter((x) => typeof x === 'string'))],
-    settings: row.settings,
+    bests: sanitizeBests(row.bests),
+    solvHist: sanitizeSolvHist(row.solvHist),
+    unlockedAchievements: unlocked,
+    settings: sanitizeSettings(row.settings),
     resume,
   };
 }

@@ -404,7 +404,9 @@ export function useGameSession() {
       const nextHistHint = [...history.slice(-99), histBeforeHint];
       setHistory(nextHistHint);
       const nb = cloneBoard(board);
-      nb[r]![c] = opts.solution[r]![c];
+      const hintVal = opts.solution[r]![c];
+      if (hintVal == null || hintVal === 0) return;
+      nb[r]![c] = hintVal;
       const nn = cloneNotes(notes);
       nn[r]![c] = 0;
       setBoard(nb);

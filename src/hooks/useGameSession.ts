@@ -180,7 +180,7 @@ export function useGameSession() {
       setSolution(s!);
       setBoard(p!.map((r) => [...r]));
 
-      setGiven(buildGiven(p));
+      setGiven(buildGiven(p!));
       setNotes(emptyNotes());
       setSelection(null);
       setHistory([]);

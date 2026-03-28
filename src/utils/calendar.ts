@@ -24,6 +24,7 @@ export function nextCalendarStreak(
 ): { streak: number; lastWinYmd: string } {
   if (!lastWinYmd) return { streak: 1, lastWinYmd: todayYmd };
   if (lastWinYmd === todayYmd) return { streak: prevStreak, lastWinYmd: todayYmd };
-  if (isPreviousCalendarDay(lastWinYmd, todayYmd)) return { streak: prevStreak + 1, lastWinYmd: todayYmd };
+  if (isPreviousCalendarDay(lastWinYmd, todayYmd))
+    return { streak: prevStreak + 1, lastWinYmd: todayYmd };
   return { streak: 1, lastWinYmd: todayYmd };
 }

@@ -164,10 +164,22 @@ export function useGameSession() {
       if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
       resumeTimerRef.current = null;
       replaceResume(null);
-      const { puzzle: p, solution: s } = generatePuzzle(diff);
-      setPuzzle(p);
-      setSolution(s);
-      setBoard(p.map((r) => [...r]));
+      let p: Board;
+      let s: Board;
+      for (let attempt = 0; attempt < 8; attempt++) {
+        try {
+          const g = generatePuzzle(diff);
+          p = g.puzzle;
+          s = g.solution;
+          break;
+        } catch {
+          if (attempt === 7) throw new Error('Could not generate puzzle');
+        }
+      }
+      setPuzzle(p!);
+      setSolution(s!);
+      setBoard(p!.map((r) => [...r]));
+
       setGiven(buildGiven(p));
       setNotes(emptyNotes());
       setSelection(null);

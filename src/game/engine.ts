@@ -92,7 +92,7 @@ export function countSolutions(board: Board, cap: number): number {
   return found;
 }
 
-const MAX_PUZZLE_REGENERATIONS = 48;
+const MAX_PUZZLE_REGENERATIONS = 400;
 
 export function generatePuzzle(diff: Difficulty): GeneratedPuzzle {
   const targetRemovals = CLUES_REMOVED[diff] ?? 37;
@@ -118,17 +118,7 @@ export function generatePuzzle(diff: Difficulty): GeneratedPuzzle {
       return { puzzle: puz, solution: cloneBoard(sol) };
     }
   }
-
-  const sol = emptyBoard();
-  fillBoard(sol);
-  const puz = cloneBoard(sol);
-  let rem = targetRemovals;
-  for (const i of shuffle([...Array(81).keys()])) {
-    if (!rem) break;
-    puz[Math.floor(i / 9)]![i % 9] = 0;
-    rem--;
-  }
-  return { puzzle: puz, solution: cloneBoard(sol) };
+  throw new Error(`Sudoku: failed to generate a unique ${diff} puzzle after ${MAX_PUZZLE_REGENERATIONS} attempts`);
 }
 
 export function cloneBoard(b: Board): Board {

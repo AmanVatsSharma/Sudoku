@@ -1,7 +1,9 @@
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 
+import { StarterScreen } from './components/StarterScreen';
 import { ToastStack, type ToastItem } from './components/ToastStack';
 import { SettingsModal } from './components/SettingsModal';
 import { StatsModal } from './components/StatsModal';
@@ -42,6 +44,7 @@ export function SudokuApp() {
   const [showSettings, setShowSettings] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [starterDone, setStarterDone] = useState(false);
 
   const S = settings;
   const theme = makeTheme(S.dark, S.accent);
@@ -103,12 +106,17 @@ export function SudokuApp() {
     [applyWin, game.difficulty, game.hintsUsed, game.mistakes, game.timeSeconds, pushToasts],
   );
 
+  useEffect(() => {
+    if (!isReady) return;
+    void SplashScreen.hideAsync();
+  }, [isReady]);
+
   if (!isReady) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
+    return null;
+  }
+
+  if (!starterDone) {
+    return <StarterScreen onContinue={() => setStarterDone(true)} />;
   }
 
   const resume = persisted.resume;

@@ -2,13 +2,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { Difficulty } from '../game/types';
-import {
-  ACCENTS,
-  DIFFICULTY_META,
-  formatTime,
-  makeTheme,
-  type AccentId,
-} from '../theme/tokens';
+import { ACCENTS, DIFFICULTY_META, formatTime, makeTheme, type AccentId } from '../theme/tokens';
 
 type Props = {
   dark: boolean;
@@ -72,9 +66,7 @@ export function HomeScreen({
         </View>
 
         <View style={styles.hero}>
-          <View
-            style={[styles.logo, { borderColor: `${T.acc}55`, backgroundColor: `${T.acc}18` }]}
-          >
+          <View style={[styles.logo, { borderColor: `${T.acc}55`, backgroundColor: `${T.acc}18` }]}>
             <Text style={{ fontSize: 44 }}>⬡</Text>
           </View>
           <Text style={[styles.title, { color: T.txt }]}>Ultimatum</Text>
@@ -181,23 +173,17 @@ export function HomeScreen({
           onPress={onPlay}
           style={[styles.play, { backgroundColor: dc, marginTop: onContinue ? 10 : 0 }]}
         >
-          <Text style={styles.playTxt}>
-            Play {DIFFICULTY_META[selectedDiff].label} →
-          </Text>
+          <Text style={styles.playTxt}>Play {DIFFICULTY_META[selectedDiff].label} →</Text>
         </Pressable>
 
         <View style={styles.tags}>
-          {[
-            'Unlimited Undo',
-            'Pencil Notes',
-            '3 Hints',
-            'Conflict Check',
-            '5 Difficulties',
-          ].map((f) => (
-            <View key={f} style={[styles.tag, { backgroundColor: T.sur, borderColor: T.bor }]}>
-              <Text style={{ fontSize: 11, color: T.txM, fontWeight: '600' }}>{f}</Text>
-            </View>
-          ))}
+          {['Unlimited Undo', 'Pencil Notes', '3 Hints', 'Conflict Check', '5 Difficulties'].map(
+            (f) => (
+              <View key={f} style={[styles.tag, { backgroundColor: T.sur, borderColor: T.bor }]}>
+                <Text style={{ fontSize: 11, color: T.txM, fontWeight: '600' }}>{f}</Text>
+              </View>
+            ),
+          )}
         </View>
         <View style={{ height: insets.bottom + 24 }} />
       </ScrollView>

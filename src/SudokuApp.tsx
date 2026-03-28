@@ -12,12 +12,14 @@ import { useGameSession } from './hooks/useGameSession';
 import { HomeScreen } from './screens/HomeScreen';
 import { GameScreen } from './screens/GameScreen';
 import { WinScreen, type WinPayload } from './screens/WinScreen';
-import { formatTime } from './theme/tokens';
+import { formatTime, makeTheme } from './theme/tokens';
 
 type Screen = 'home' | 'game' | 'win';
 
+const DIFF_ORDER: Difficulty[] = ['easy', 'medium', 'hard', 'expert', 'ultimatum'];
+
 export function SudokuApp() {
-  const { isReady } = usePersistedApp();
+  const { isReady, persisted } = usePersistedApp();
   const {
     xp,
     level,
@@ -40,17 +42,19 @@ export function SudokuApp() {
   const [showStats, setShowStats] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
+  const S = settings;
+  const theme = makeTheme(S.dark, S.accent);
+
   const pushToasts = useCallback((items: { tid: number; title: string; desc: string; xp: number }[]) => {
     if (!items.length) return;
     setToasts((q) => [...q.slice(-2), ...items.map((i) => ({ ...i }))]);
     for (const t of items) {
+      const tid = t.tid;
       setTimeout(() => {
-        setToasts((q) => q.filter((x) => x.tid !== t.tid));
+        setToasts((q) => q.filter((x) => x.tid !== tid));
       }, 3800);
     }
   }, []);
-
-  const T = settings;
 
   const handleSolved = useCallback(() => {
     const xpE = calcXP(game.difficulty, game.mistakes, game.hintsUsed, game.timeSeconds);
@@ -87,15 +91,17 @@ export function SudokuApp() {
     );
   }
 
+  const resume = persisted.resume;
+
   return (
-    <View style={{ flex: 1, backgroundColor: T.dark ? '#08080F' : '#F3F3EE' }}>
-      <StatusBar style={T.dark ? 'light' : 'dark'} />
+    <View style={{ flex: 1, backgroundColor: theme.bg }}>
+      <StatusBar style={S.dark ? 'light' : 'dark'} />
 
       {screen === 'home' ? (
         <HomeScreen
-          dark={T.dark}
-          onToggleDark={() => updateSettings({ dark: !T.dark })}
-          accent={T.accent}
+          dark={S.dark}
+          onToggleDark={() => updateSettings({ dark: !S.dark })}
+          accent={S.accent}
           onAccent={(accent) => updateSettings({ accent })}
           selectedDiff={selectedDiff}
           onSelectDiff={setSelectedDiff}
@@ -104,13 +110,10 @@ export function SudokuApp() {
             setScreen('game');
           }}
           onContinue={
-            usePersistedApp().persisted.resume
+            resume
               ? () => {
-                  const r = usePersistedApp().persisted.resume;
-                  if (r) {
-                    game.continueFromResume(r);
-                    setScreen('game');
-                  }
+                  game.continueFromResume(resume);
+                  setScreen('game');
                 }
               : null
           }
@@ -119,7 +122,7 @@ export function SudokuApp() {
           xp={xp}
           rank={rank}
           streak={streak}
-          solves={solves && solves}
+          solves={solves}
           bests={bests}
           unlockedCount={unlockedAchievements.length}
         />
@@ -127,16 +130,16 @@ export function SudokuApp() {
 
       {screen === 'game' && game.board && game.solution && game.given ? (
         <GameScreen
-          Tdark={T.dark}
-          accent={T.accent}
+          Tdark={S.dark}
+          accent={S.accent}
           game={game}
           solution={game.solution}
           puzzle={game.puzzle!}
           given={game.given}
-          hlSame={T.hlSame}
-          showErr={T.showErr}
-          autoRm={T.autoRm}
-          showClock={T.showClock}
+          hlSame={S.hlSame}
+          showErr={S.showErr}
+          autoRm={S.autoRm}
+          showClock={S.showClock}
           onHome={() => {
             game.exitToMenu();
             setScreen('home');
@@ -148,14 +151,15 @@ export function SudokuApp() {
 
       {screen === 'win' && winData ? (
         <WinScreen
-          dark={T.dark}
-          accent={T.accent}
+          dark={S.dark}
+          accent={S.accent}
           win={winData}
           level={level}
           xp={xp}
           onReplay={() => {
+            const d = winData.diff;
             setWinData(null);
-            game.startNewGame(winData.diff);
+            game.startNewGame(d);
             setScreen('game');
           }}
           onHome={() => {
@@ -163,9 +167,8 @@ export function SudokuApp() {
             setScreen('home');
           }}
           onNext={() => {
-            const order: Difficulty[] = ['easy', 'medium', 'hard', 'expert', 'ultimatum'];
-            const i = order.indexOf(winData.diff);
-            const next = order[Math.min(i + 1, order.length - 1)]!;
+            const i = DIFF_ORDER.indexOf(winData.diff);
+            const next = DIFF_ORDER[Math.min(i + 1, DIFF_ORDER.length - 1)]!;
             setWinData(null);
             game.startNewGame(next);
             setScreen('game');
@@ -173,12 +176,45 @@ export function SudokuApp() {
         />
       ) : null}
 
-      <ToastStack
-        toasts={toasts}
-        T={require('./theme/tokens').makeTheme(T.dark, T.accent)}
-        onExpire={() => {}}
+      <ToastStack toasts={toasts} T={theme} />
+
+      <SettingsModal
+        visible={showSettings}
+        onClose={() => setShowSettings(false)}
+        dark={S.dark}
+        setDark={(v) => updateSettings({ dark: v })}
+        accent={S.accent}
+        setAccent={(a) => updateSettings({ accent: a })}
+        hlSame={S.hlSame}
+        setHlSame={(v) => updateSettings({ hlSame: v })}
+        showErr={S.showErr}
+        setShowErr={(v) => updateSettings({ showErr: v })}
+        autoRm={S.autoRm}
+        setAutoRm={(v) => updateSettings({ autoRm: v })}
+        showClock={S.showClock}
+        setShowClock={(v) => updateSettings({ showClock: v })}
+        paused={game.paused}
+        onTogglePause={() => game.setPaused((p) => !p)}
+        onNewGame={() => {
+          game.exitToMenu();
+          setScreen('home');
+        }}
       />
-      ...
+
+      <StatsModal
+        visible={showStats}
+        onClose={() => setShowStats(false)}
+        dark={S.dark}
+        accent={S.accent}
+        level={level}
+        xp={xp}
+        rank={rank}
+        streak={streak}
+        solves={solves}
+        bests={bests}
+        solvHist={solvHist}
+        unlockedIds={unlockedAchievements}
+      />
     </View>
   );
 }

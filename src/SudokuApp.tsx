@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, AppState, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 
@@ -15,6 +15,10 @@ import { useGameSession } from './hooks/useGameSession';
 import { HomeScreen } from './screens/HomeScreen';
 import { GameScreen } from './screens/GameScreen';
 import { WinScreen, type WinPayload } from './screens/WinScreen';
+import {
+  requestDailyReminderPermission,
+  syncDailyReminders,
+} from './notifications/dailyReminder';
 import { formatTime, makeTheme } from './theme/tokens';
 
 type Screen = 'home' | 'game' | 'win';
@@ -45,6 +49,8 @@ export function SudokuApp() {
   const [showStats, setShowStats] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [starterDone, setStarterDone] = useState(false);
+  const dailyReminderRef = useRef(settings.dailyReminder);
+  dailyReminderRef.current = settings.dailyReminder;
 
   const S = settings;
   const theme = makeTheme(S.dark, S.accent);
@@ -110,6 +116,40 @@ export function SudokuApp() {
     if (!isReady) return;
     void SplashScreen.hideAsync();
   }, [isReady]);
+
+  useEffect(() => {
+    if (!isReady || !starterDone) return;
+    void syncDailyReminders(S.dailyReminder);
+  }, [isReady, starterDone, S.dailyReminder]);
+
+  useEffect(() => {
+    if (!isReady || !starterDone) return;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && dailyReminderRef.current) {
+        void syncDailyReminders(true);
+      }
+    });
+    return () => sub.remove();
+  }, [isReady, starterDone]);
+
+  const onDailyReminderChange = useCallback(
+    async (enabled: boolean) => {
+      if (enabled) {
+        const ok = await requestDailyReminderPermission();
+        if (!ok) {
+          Alert.alert(
+            'Notifications disabled',
+            'Allow notifications in system settings if you want a daily puzzle reminder.',
+          );
+          return;
+        }
+        updateSettings({ dailyReminder: true });
+        return;
+      }
+      updateSettings({ dailyReminder: false });
+    },
+    [updateSettings],
+  );
 
   if (!isReady) {
     return null;
@@ -236,6 +276,8 @@ export function SudokuApp() {
         setAutoRm={(v) => updateSettings({ autoRm: v })}
         showClock={S.showClock}
         setShowClock={(v) => updateSettings({ showClock: v })}
+        dailyReminder={S.dailyReminder}
+        onDailyReminderChange={onDailyReminderChange}
         paused={game.paused}
         onTogglePause={() => game.setPaused((p) => !p)}
         onNewGame={() => {

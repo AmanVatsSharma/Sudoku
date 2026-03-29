@@ -19,6 +19,8 @@ type Props = {
   setAutoRm: (v: boolean) => void;
   showClock: boolean;
   setShowClock: (v: boolean) => void;
+  dailyReminder: boolean;
+  onDailyReminderChange: (enabled: boolean) => void | Promise<void>;
   paused: boolean;
   onTogglePause: () => void;
   onNewGame: () => void;
@@ -39,6 +41,8 @@ export function SettingsModal({
   setAutoRm,
   showClock,
   setShowClock,
+  dailyReminder,
+  onDailyReminderChange,
   paused,
   onTogglePause,
   onNewGame,
@@ -70,6 +74,16 @@ export function SettingsModal({
             <Row label="Show timer" T={T}>
               <Switch value={showClock} onValueChange={setShowClock} />
             </Row>
+            <Text style={[styles.sec, { color: T.txM }]}>Reminders</Text>
+            <Row label="Daily play reminder" T={T}>
+              <Switch
+                value={dailyReminder}
+                onValueChange={(v) => void onDailyReminderChange(v)}
+              />
+            </Row>
+            <Text style={[styles.hint, { color: T.txM }]}>
+              One notification per day at a random time (phone / tablet only).
+            </Text>
             <Text style={[styles.sec, { color: T.txM }]}>Theme color</Text>
             <View style={styles.accentRow}>
               {ACCENTS.map((ac) => {
@@ -165,6 +179,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
+  },
+  hint: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 4,
+    marginTop: -4,
   },
   accentRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
   accentBtn: {

@@ -97,6 +97,8 @@ function sanitizeSettings(s: unknown): AppPersistedV2['settings'] {
     showErr: typeof s.showErr === 'boolean' ? s.showErr : d.showErr,
     autoRm: typeof s.autoRm === 'boolean' ? s.autoRm : d.autoRm,
     showClock: typeof s.showClock === 'boolean' ? s.showClock : d.showClock,
+    dailyReminder:
+      typeof s.dailyReminder === 'boolean' ? s.dailyReminder : d.dailyReminder,
   };
 }
 

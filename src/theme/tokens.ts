@@ -63,6 +63,12 @@ export type ThemeTokens = {
   surH: string;
   bor: string;
   borS: string;
+  /** Fine lines between individual cells (9×9). */
+  gridMinor: string;
+  /** Bold 3×3 block boundaries (standard Sudoku). */
+  gridMajor: string;
+  /** Board “paper” fill behind cells. */
+  gridBoard: string;
   txt: string;
   txS: string;
   txM: string;
@@ -99,6 +105,9 @@ export function makeTheme(dark: boolean, accentId: AccentId): ThemeTokens {
       surH: 'rgba(255,255,255,0.1)',
       bor: 'rgba(255,255,255,0.09)',
       borS: 'rgba(255,255,255,0.22)',
+      gridMinor: 'rgba(255,255,255,0.11)',
+      gridMajor: 'rgba(255,255,255,0.52)',
+      gridBoard: 'rgba(255,255,255,0.03)',
       txt: '#F2F2F7',
       txS: 'rgba(242,242,247,0.7)',
       txM: 'rgba(242,242,247,0.4)',
@@ -131,6 +140,9 @@ export function makeTheme(dark: boolean, accentId: AccentId): ThemeTokens {
     surH: 'rgba(0,0,0,0.09)',
     bor: 'rgba(0,0,0,0.09)',
     borS: 'rgba(0,0,0,0.22)',
+    gridMinor: 'rgba(0,0,0,0.10)',
+    gridMajor: 'rgba(0,0,0,0.38)',
+    gridBoard: 'rgba(255,255,255,0.65)',
     txt: '#1A1A1E',
     txS: 'rgba(26,26,30,0.7)',
     txM: 'rgba(26,26,30,0.45)',

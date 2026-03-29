@@ -55,7 +55,11 @@ export function GameScreen({
   const T = makeTheme(Tdark, accent);
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const cellSize = Math.min(40, Math.floor((Math.min(width - 32, 420) - 8) / 9));
+  const layoutW = Math.min(width - 32, 440);
+  const cellSize = Math.min(
+    48,
+    Math.max(34, Math.floor((layoutW - 40) / 9)),
+  );
 
   const [noteWarn, setNoteWarn] = useState<string | null>(null);
   const cellRefs = useRef<Map<string, RNView | null>>(new Map());

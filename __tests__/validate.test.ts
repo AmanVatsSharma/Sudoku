@@ -20,13 +20,45 @@ describe('normalizePersisted', () => {
       },
       resume: null,
     });
-    expect(out.v).toBe(2);
+    expect(out.v).toBe(3);
     expect(out.calendarStreak).toBe(4);
     expect(out.lastWinCalendarYmd).toBeNull();
     expect(out.solves).toBe(2);
+    expect(out.gamesStarted).toBe(0);
+    expect(out.totalWinSeconds).toBe(0);
+    expect(out.flawlessWins).toBe(0);
+    expect(out.noHintWins).toBe(0);
   });
 
-  it('rejects corrupt resume on v2', () => {
+  it('migrates v2 to v3 with default stats fields', () => {
+    const out = normalizePersisted({
+      v: 2,
+      xp: 200,
+      calendarStreak: 2,
+      lastWinCalendarYmd: '2026-03-01',
+      solves: 5,
+      bests: { easy: 60 },
+      unlockedAchievements: ['first'],
+      solvHist: [],
+      settings: {
+        dark: true,
+        accent: 'blue',
+        hlSame: true,
+        showErr: true,
+        autoRm: true,
+        showClock: true,
+        dailyReminder: false,
+      },
+      resume: null,
+    });
+    expect(out.v).toBe(3);
+    expect(out.xp).toBe(200);
+    expect(out.solves).toBe(5);
+    expect(out.gamesStarted).toBe(0);
+    expect(out.winsByDifficulty).toEqual({});
+  });
+
+  it('rejects corrupt resume on legacy v2 shape', () => {
     const out = normalizePersisted({
       v: 2,
       xp: 0,
@@ -43,6 +75,7 @@ describe('normalizePersisted', () => {
         showErr: true,
         autoRm: true,
         showClock: true,
+        dailyReminder: false,
       },
       resume: { bogus: true },
     });

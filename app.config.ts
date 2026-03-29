@@ -30,6 +30,7 @@ const config: ExpoConfig = {
     favicon: './assets/favicon.png',
   },
   plugins: [
+    'expo-asset',
     ['expo-system-ui', { userInterfaceStyle: 'automatic' }],
     'expo-notifications',
   ],

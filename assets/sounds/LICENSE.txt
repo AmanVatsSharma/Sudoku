@@ -1,0 +1,18 @@
+Bundled sound effects are from Kenney "Interface Sounds" (CC0 1.0 Universal).
+Source: https://kenney.nl/assets/interface-sounds
+Pack mirror used for bundling: https://github.com/Calinou/kenney-interface-sounds
+
+Files in this folder are renamed from the pack:
+- tap.wav  ← tick_001.wav
+- place.wav ← pluck_001.wav
+- error.wav ← error_001.wav
+- hint.wav ← question_001.wav
+- win.wav ← confirmation_001.wav
+
+Full license text from the asset pack:
+
+	Creative Commons Zero (CC0) 1.0
+	https://creativecommons.org/publicdomain/zero/1.0/
+
+	This content is free to use in personal, educational and commercial projects.
+	Support Kenney at https://www.kenney.nl (optional).

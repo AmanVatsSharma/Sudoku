@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type View as RNView } from 'react-native';
 
 import { hasNote } from '../game/engine';
 import type { Board, NotesGrid } from '../game/types';
@@ -22,6 +22,7 @@ type Props = {
   doneBoxes: Set<string>;
   isConflict: (r: number, c: number) => boolean;
   cellSize: number;
+  registerCellRef?: (r: number, c: number, ref: RNView | null) => void;
 };
 
 function NoteMarks({ mask, size, color }: { mask: number; size: number; color: string }) {
@@ -65,6 +66,7 @@ export const SudokuGrid = memo(function SudokuGrid({
   doneBoxes,
   isConflict,
   cellSize,
+  registerCellRef,
 }: Props) {
   const selVal = selection != null ? board[selection[0]]![selection[1]]! : null;
 
@@ -133,42 +135,48 @@ export const SudokuGrid = memo(function SudokuGrid({
             }
 
             return (
-              <Pressable
+              <View
                 key={c}
-                onPress={() => setSelection([r, c])}
-                style={[
-                  styles.cell,
-                  {
-                    width: cellSize,
-                    height: cellSize,
-                    backgroundColor: bg,
-                    borderLeftWidth: thickR,
-                    borderTopWidth: thickB,
-                    borderColor: T.borS,
-                  },
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel={`Row ${r + 1}, column ${c + 1}${
-                  val ? `, value ${val}` : ', empty'
-                }${isGiven ? ', given' : ''}`}
+                ref={(el) => registerCellRef?.(r, c, el)}
+                collapsable={false}
+                style={{ width: cellSize, height: cellSize }}
               >
-                {val !== 0 ? (
-                  <Text
-                    style={[
-                      styles.digit,
-                      {
-                        color: digitColor,
-                        fontWeight: isGiven ? '800' : '600',
-                        fontSize: cellSize * 0.42,
-                      },
-                    ]}
-                  >
-                    {val}
-                  </Text>
-                ) : (
-                  <NoteMarks mask={notes[r]![c]!} size={cellSize} color={T.acc} />
-                )}
-              </Pressable>
+                <Pressable
+                  onPress={() => setSelection([r, c])}
+                  style={[
+                    styles.cell,
+                    {
+                      width: cellSize,
+                      height: cellSize,
+                      backgroundColor: bg,
+                      borderLeftWidth: thickR,
+                      borderTopWidth: thickB,
+                      borderColor: T.borS,
+                    },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Row ${r + 1}, column ${c + 1}${
+                    val ? `, value ${val}` : ', empty'
+                  }${isGiven ? ', given' : ''}`}
+                >
+                  {val !== 0 ? (
+                    <Text
+                      style={[
+                        styles.digit,
+                        {
+                          color: digitColor,
+                          fontWeight: isGiven ? '800' : '600',
+                          fontSize: cellSize * 0.42,
+                        },
+                      ]}
+                    >
+                      {val}
+                    </Text>
+                  ) : (
+                    <NoteMarks mask={notes[r]![c]!} size={cellSize} color={T.acc} />
+                  )}
+                </Pressable>
+              </View>
             );
           })}
         </View>

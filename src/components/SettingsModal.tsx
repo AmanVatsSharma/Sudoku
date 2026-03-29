@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
+import type { NumberPadMode } from '../persistence/schema';
 import type { AccentId } from '../theme/tokens';
 import { ACCENTS, makeTheme } from '../theme/tokens';
 
@@ -17,8 +18,14 @@ type Props = {
   setShowErr: (v: boolean) => void;
   autoRm: boolean;
   setAutoRm: (v: boolean) => void;
+  blockBad: boolean;
+  setBlockBad: (v: boolean) => void;
+  numberPadMode: NumberPadMode;
+  setNumberPadMode: (v: NumberPadMode) => void;
   showClock: boolean;
   setShowClock: (v: boolean) => void;
+  soundEffects: boolean;
+  setSoundEffects: (v: boolean) => void;
   dailyReminder: boolean;
   onDailyReminderChange: (enabled: boolean) => void | Promise<void>;
   paused: boolean;
@@ -39,8 +46,14 @@ export function SettingsModal({
   setShowErr,
   autoRm,
   setAutoRm,
+  blockBad,
+  setBlockBad,
+  numberPadMode,
+  setNumberPadMode,
   showClock,
   setShowClock,
+  soundEffects,
+  setSoundEffects,
   dailyReminder,
   onDailyReminderChange,
   paused,
@@ -71,8 +84,49 @@ export function SettingsModal({
             <Row label="Auto-remove notes" T={T}>
               <Switch value={autoRm} onValueChange={setAutoRm} />
             </Row>
+            <RowDesc
+              label="Block invalid notes"
+              desc="When on, impossible pencil marks are rejected."
+              T={T}
+            >
+              <Switch value={blockBad} onValueChange={setBlockBad} />
+            </RowDesc>
+            <Text style={[styles.subLbl, { color: T.txM }]}>Number pad</Text>
+            <View style={styles.padPick}>
+              {(
+                [
+                  { mode: 'bottom' as const, label: 'Bottom bar' },
+                  { mode: 'floating' as const, label: 'Floating' },
+                ] as const
+              ).map(({ mode, label }) => {
+                const on = numberPadMode === mode;
+                return (
+                  <Pressable
+                    key={mode}
+                    onPress={() => setNumberPadMode(mode)}
+                    style={[
+                      styles.padChip,
+                      {
+                        borderColor: on ? T.acc : T.bor,
+                        backgroundColor: on ? `${T.acc}22` : T.sur,
+                      },
+                    ]}
+                  >
+                    <Text style={{ color: on ? T.acc : T.txM, fontWeight: '800', fontSize: 13 }}>
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text style={[styles.hint, { color: T.txM, marginBottom: 8 }]}>
+              Floating opens a pad near the selected cell; bottom keeps the large keypad.
+            </Text>
             <Row label="Show timer" T={T}>
               <Switch value={showClock} onValueChange={setShowClock} />
+            </Row>
+            <Row label="Sound effects" T={T}>
+              <Switch value={soundEffects} onValueChange={setSoundEffects} />
             </Row>
             <Text style={[styles.sec, { color: T.txM }]}>Reminders</Text>
             <Row label="Daily play reminder" T={T}>
@@ -151,6 +205,28 @@ function Row({
   );
 }
 
+function RowDesc({
+  label,
+  desc,
+  children,
+  T,
+}: {
+  label: string;
+  desc: string;
+  children: ReactNode;
+  T: ReturnType<typeof makeTheme>;
+}) {
+  return (
+    <View style={[styles.row, { alignItems: 'flex-start' }]}>
+      <View style={{ flex: 1, paddingRight: 8 }}>
+        <Text style={{ color: T.txt, fontWeight: '600' }}>{label}</Text>
+        <Text style={{ color: T.txM, fontSize: 11, marginTop: 3 }}>{desc}</Text>
+      </View>
+      {children}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
@@ -179,6 +255,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
+  },
+  subLbl: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  padPick: { flexDirection: 'row', gap: 10, marginBottom: 6 },
+  padChip: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
   },
   hint: {
     fontSize: 12,

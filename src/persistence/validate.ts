@@ -2,7 +2,7 @@ import type { AccentId } from '../theme/tokens';
 import { isValidSolvedBoard } from '../game/engine';
 import type { Board, Difficulty } from '../game/types';
 
-import type { AppPersistedV1, AppPersistedV2, ResumeStateV1, SolveHistoryEntry } from './schema';
+import type { AppPersisted, AppPersistedV1, AppPersistedV2Disk, ResumeStateV1, SolveHistoryEntry } from './schema';
 import { PERSISTENCE_VERSION, defaultPersisted, defaultSettings } from './schema';
 
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard', 'expert', 'ultimatum'];
@@ -84,7 +84,7 @@ export function validateResume(raw: unknown): ResumeStateV1 | null {
   };
 }
 
-function sanitizeSettings(s: unknown): AppPersistedV2['settings'] {
+function sanitizeSettings(s: unknown): AppPersisted['settings'] {
   const d = defaultSettings();
   if (!isRecord(s)) return d;
   return {
@@ -102,15 +102,27 @@ function sanitizeSettings(s: unknown): AppPersistedV2['settings'] {
   };
 }
 
-function sanitizeBests(x: unknown): AppPersistedV2['bests'] {
+function sanitizeBests(x: unknown): AppPersisted['bests'] {
   if (!isRecord(x)) return {};
-  const o: AppPersistedV2['bests'] = {};
+  const o: AppPersisted['bests'] = {};
   for (const k of DIFFICULTIES) {
     const v = x[k];
     if (typeof v === 'number' && v >= 0 && v < 86400 * 7) o[k] = v;
   }
   return o;
 }
+
+function sanitizeWinsByDifficulty(x: unknown): AppPersisted['winsByDifficulty'] {
+  if (!isRecord(x)) return {};
+  const o: AppPersisted['winsByDifficulty'] = {};
+  for (const k of DIFFICULTIES) {
+    const v = x[k];
+    if (typeof v === 'number' && v >= 0 && v < 1e6) o[k] = Math.floor(v);
+  }
+  return o;
+}
+
+const RUN_GRADES = new Set(['S', 'A', 'B', 'C', 'D']);
 
 function sanitizeSolvHist(x: unknown): SolveHistoryEntry[] {
   if (!Array.isArray(x)) return [];
@@ -122,23 +134,31 @@ function sanitizeSolvHist(x: unknown): SolveHistoryEntry[] {
     if (typeof e.time !== 'string' || e.time.length > 32) continue;
     if (typeof e.mistakes !== 'number' || e.mistakes < 0) continue;
     if (typeof e.xp !== 'number' || e.xp < 0) continue;
-    out.push({
+    const entry: SolveHistoryEntry = {
       diff: diff as Difficulty,
       time: e.time,
       mistakes: e.mistakes,
       xp: e.xp,
-    });
+    };
+    if (typeof e.hintsUsed === 'number' && e.hintsUsed >= 0 && e.hintsUsed <= 9)
+      entry.hintsUsed = e.hintsUsed;
+    if (typeof e.grade === 'string' && e.grade.length <= 2 && RUN_GRADES.has(e.grade))
+      entry.grade = e.grade;
+    if (typeof e.runScore === 'number' && e.runScore >= 0 && e.runScore <= 10000)
+      entry.runScore = Math.round(e.runScore);
+    out.push(entry);
   }
   return out.slice(0, 20);
 }
 
-function migrateV1ToV2(row: AppPersistedV1): AppPersistedV2 {
+function migrateV1ToLatest(row: AppPersistedV1): AppPersisted {
   const resume = row.resume ? validateResume(row.resume as unknown) : null;
   const unlocked = Array.isArray(row.unlockedAchievements)
     ? [...new Set(row.unlockedAchievements.filter((x) => typeof x === 'string'))]
     : [];
+  const def = defaultPersisted();
   return {
-    v: PERSISTENCE_VERSION,
+    ...def,
     xp: Math.max(0, Math.floor(row.xp)),
     calendarStreak: Math.max(0, Math.min(999, Math.floor(row.streak))),
     lastWinCalendarYmd: null,
@@ -151,7 +171,38 @@ function migrateV1ToV2(row: AppPersistedV1): AppPersistedV2 {
   };
 }
 
-export function normalizePersisted(raw: unknown): AppPersistedV2 {
+function migrateV2DiskToLatest(row: AppPersistedV2Disk): AppPersisted {
+  const def = defaultPersisted();
+  let resume: ResumeStateV1 | null = null;
+  if (row.resume != null) resume = validateResume(row.resume);
+
+  const unlocked = Array.isArray(row.unlockedAchievements)
+    ? [...new Set(row.unlockedAchievements.filter((x): x is string => typeof x === 'string'))]
+    : [];
+
+  return {
+    ...def,
+    v: PERSISTENCE_VERSION,
+    xp: typeof row.xp === 'number' && row.xp >= 0 ? Math.floor(row.xp) : 0,
+    calendarStreak:
+      typeof row.calendarStreak === 'number'
+        ? Math.max(0, Math.min(999, Math.floor(row.calendarStreak)))
+        : 0,
+    lastWinCalendarYmd:
+      typeof row.lastWinCalendarYmd === 'string' &&
+      /^\d{4}-\d{2}-\d{2}$/.test(row.lastWinCalendarYmd)
+        ? row.lastWinCalendarYmd
+        : null,
+    solves: typeof row.solves === 'number' && row.solves >= 0 ? Math.floor(row.solves) : 0,
+    bests: sanitizeBests(row.bests),
+    unlockedAchievements: unlocked,
+    solvHist: sanitizeSolvHist(row.solvHist),
+    settings: sanitizeSettings(row.settings),
+    resume,
+  };
+}
+
+export function normalizePersisted(raw: unknown): AppPersisted {
   const base = defaultPersisted();
   if (!isRecord(raw)) return base;
 
@@ -165,13 +216,22 @@ export function normalizePersisted(raw: unknown): AppPersistedV2 {
       return base;
     }
     try {
-      return migrateV1ToV2(row);
+      return migrateV1ToLatest(row);
     } catch {
       return base;
     }
   }
 
-  if (raw.v !== 2) return base;
+  if (raw.v === 2) {
+    const row = raw as unknown as AppPersistedV2Disk;
+    try {
+      return migrateV2DiskToLatest(row);
+    } catch {
+      return base;
+    }
+  }
+
+  if (raw.v !== 3) return base;
 
   const xp = typeof raw.xp === 'number' && raw.xp >= 0 ? Math.floor(raw.xp) : 0;
   const calendarStreak =
@@ -183,6 +243,22 @@ export function normalizePersisted(raw: unknown): AppPersistedV2 {
       ? raw.lastWinCalendarYmd
       : null;
   const solves = typeof raw.solves === 'number' && raw.solves >= 0 ? Math.floor(raw.solves) : 0;
+  const gamesStarted =
+    typeof raw.gamesStarted === 'number' && raw.gamesStarted >= 0
+      ? Math.min(1e7, Math.floor(raw.gamesStarted))
+      : 0;
+  const totalWinSeconds =
+    typeof raw.totalWinSeconds === 'number' && raw.totalWinSeconds >= 0
+      ? Math.min(1e12, Math.floor(raw.totalWinSeconds))
+      : 0;
+  const flawlessWins =
+    typeof raw.flawlessWins === 'number' && raw.flawlessWins >= 0
+      ? Math.min(1e7, Math.floor(raw.flawlessWins))
+      : 0;
+  const noHintWins =
+    typeof raw.noHintWins === 'number' && raw.noHintWins >= 0
+      ? Math.min(1e7, Math.floor(raw.noHintWins))
+      : 0;
 
   let resume: ResumeStateV1 | null = null;
   if (raw.resume != null) resume = validateResume(raw.resume);
@@ -197,6 +273,11 @@ export function normalizePersisted(raw: unknown): AppPersistedV2 {
     calendarStreak,
     lastWinCalendarYmd: lastWin,
     solves,
+    gamesStarted,
+    totalWinSeconds,
+    winsByDifficulty: sanitizeWinsByDifficulty(raw.winsByDifficulty),
+    flawlessWins,
+    noHintWins,
     bests: sanitizeBests(raw.bests),
     unlockedAchievements: unlocked,
     solvHist: sanitizeSolvHist(raw.solvHist),

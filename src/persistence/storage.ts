@@ -1,12 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import type { AppPersistedV2 } from './schema';
+import type { AppPersisted } from './schema';
 import { defaultPersisted } from './schema';
 import { normalizePersisted } from './validate';
 
 const STORAGE_KEY = '@sudoku/persisted_v1';
 
-export async function loadPersisted(): Promise<AppPersistedV2> {
+export async function loadPersisted(): Promise<AppPersisted> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultPersisted();
@@ -22,7 +22,7 @@ export async function loadPersisted(): Promise<AppPersistedV2> {
   }
 }
 
-export async function savePersisted(state: AppPersistedV2): Promise<void> {
+export async function savePersisted(state: AppPersisted): Promise<void> {
   try {
     const payload = normalizePersisted(state);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload));

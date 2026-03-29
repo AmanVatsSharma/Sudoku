@@ -14,6 +14,7 @@ export type WinPayload = {
   xpEarned: number;
   runScore: number;
   grade: RunGrade;
+  flowBonus?: boolean;
 };
 
 type Props = {
@@ -83,6 +84,11 @@ export function WinScreen({ dark, accent, win, level, xp, rank, onReplay, onHome
           {rank} · Lv.{level}
         </Text>
       </View>
+      {win.flowBonus ? (
+        <Text style={{ color: T.yel, textAlign: 'center', fontSize: 12, fontWeight: '700', marginTop: 6 }}>
+          Flow state +20% XP
+        </Text>
+      ) : null}
 
       <View style={styles.statsRow}>
         <MiniStat icon="⏱" label="Time" value={win.timeLabel} T={T} />

@@ -187,13 +187,19 @@ export function HomeScreen({
         </Pressable>
 
         <View style={styles.tags}>
-          {['Unlimited Undo', 'Pencil Notes', '3 Hints', 'Conflict Check', '5 Difficulties'].map(
-            (f) => (
-              <View key={f} style={[styles.tag, { backgroundColor: T.sur, borderColor: T.bor }]}>
-                <Text style={{ fontSize: 11, color: T.txM, fontWeight: '600' }}>{f}</Text>
-              </View>
-            ),
-          )}
+          {[
+            'Unlimited undo',
+            '3 hints',
+            'Floating or bottom pad',
+            'Fill candidates',
+            'Branches & flow',
+            'Daily reminder',
+            'Run scores',
+          ].map((f) => (
+            <View key={f} style={[styles.tag, { backgroundColor: T.sur, borderColor: T.bor }]}>
+              <Text style={{ fontSize: 11, color: T.txM, fontWeight: '600' }}>{f}</Text>
+            </View>
+          ))}
         </View>
         <View style={{ height: insets.bottom + 24 }} />
       </ScrollView>

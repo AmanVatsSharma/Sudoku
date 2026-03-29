@@ -2,12 +2,13 @@ Bundled sound effects are from Kenney "Interface Sounds" (CC0 1.0 Universal).
 Source: https://kenney.nl/assets/interface-sounds
 Pack mirror used for bundling: https://github.com/Calinou/kenney-interface-sounds
 
-Files in this folder are renamed from the pack:
-- tap.wav  ← tick_001.wav
-- place.wav ← pluck_001.wav
-- error.wav ← error_001.wav
-- hint.wav ← question_001.wav
-- win.wav ← confirmation_001.wav
+Files use softer glass / air-style sources, lightly processed (high/low pass + level) for a calmer UI:
+
+- tap.wav   ← glass_001.wav
+- place.wav ← glass_003.wav
+- error.wav ← minimize_002.wav (soft downshift, not a sharp error beep)
+- hint.wav  ← open_002.wav
+- win.wav   ← glass_005.wav
 
 Full license text from the asset pack:
 

@@ -138,6 +138,22 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     xp: 300,
     rarity: 'uncommon',
   },
+  {
+    id: 'flow',
+    icon: '✦',
+    title: 'In The Flow',
+    desc: 'Reach Flow state',
+    xp: 200,
+    rarity: 'uncommon',
+  },
+  {
+    id: 'brancher',
+    icon: '⑂',
+    title: 'Hypothesis',
+    desc: 'Use a branch',
+    xp: 150,
+    rarity: 'common',
+  },
 ];
 
 export const RARITY_COLORS: Record<AchievementRarity, string> = {

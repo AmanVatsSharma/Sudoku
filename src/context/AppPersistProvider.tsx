@@ -28,6 +28,8 @@ type WinApplyInput = {
   timeSeconds: number;
   mistakes: number;
   hintsUsed: number;
+  /** +20% base XP when Flow was active at solve (matches HTML). */
+  flowBonus?: boolean;
 };
 
 export type GrantedAchievementToast = {
@@ -49,6 +51,7 @@ type AppPersistContextValue = {
   replaceResume: (resume: ResumeStateV1 | null) => void;
   bumpGamesStarted: () => void;
   applyWin: (input: WinApplyInput) => GrantedAchievementToast[];
+  grantAchievement: (id: string) => GrantedAchievementToast | null;
 };
 
 const AppPersistContext = createContext<AppPersistContextValue | null>(null);
@@ -58,7 +61,13 @@ function computeWin(
   input: WinApplyInput,
 ): { next: AppPersisted; granted: GrantedAchievementToast[] } {
   const solvesBefore = p.solves;
-  const xpEarned = calcXP(input.diff, input.mistakes, input.hintsUsed, input.timeSeconds);
+  const xpEarned = calcXP(
+    input.diff,
+    input.mistakes,
+    input.hintsUsed,
+    input.timeSeconds,
+    input.flowBonus,
+  );
   const prevBest = p.bests[input.diff];
   const { score: runScore, grade } = computeRunScore({
     diff: input.diff,
@@ -216,6 +225,27 @@ export function AppPersistProvider({ children }: { children: ReactNode }) {
     return granted;
   }, []);
 
+  const grantAchievement = useCallback((id: string): GrantedAchievementToast | null => {
+    const pr = persistedRef.current;
+    if (pr.unlockedAchievements.includes(id)) return null;
+    const a = achievementById(id);
+    if (!a) return null;
+    setPersisted((p) => ({
+      ...p,
+      xp: p.xp + a.xp,
+      unlockedAchievements: [...p.unlockedAchievements, id],
+    }));
+    return {
+      tid: Date.now() + Math.random(),
+      id: a.id,
+      title: a.title,
+      desc: a.desc,
+      xp: a.xp,
+      rarity: a.rarity,
+      icon: a.icon,
+    };
+  }, []);
+
   const level = Math.floor(persisted.xp / XP_PER_LEVEL) + 1;
   const rank = rankForLevel(level);
 
@@ -229,8 +259,9 @@ export function AppPersistProvider({ children }: { children: ReactNode }) {
       replaceResume,
       bumpGamesStarted,
       applyWin,
+      grantAchievement,
     }),
-    [applyWin, bumpGamesStarted, isReady, level, rank, persisted, replaceResume, updateSettings],
+    [applyWin, bumpGamesStarted, grantAchievement, isReady, level, rank, persisted, replaceResume, updateSettings],
   );
 
   return <AppPersistContext.Provider value={value}>{children}</AppPersistContext.Provider>;
@@ -243,7 +274,8 @@ export function usePersistedApp(): AppPersistContextValue {
 }
 
 export function useProfile() {
-  const { persisted, level, rank, updateSettings, applyWin, isReady } = usePersistedApp();
+  const { persisted, level, rank, updateSettings, applyWin, grantAchievement, isReady } =
+    usePersistedApp();
   return {
     isReady,
     xp: persisted.xp,
@@ -262,5 +294,6 @@ export function useProfile() {
     settings: persisted.settings,
     updateSettings,
     applyWin,
+    grantAchievement,
   };
 }

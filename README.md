@@ -19,6 +19,8 @@ Display name **Sudoku Ultimatum**, Expo slug `sudoku-ultimatum`, Android package
 | [**Sudoku-Ultimatum-1.0.3-multiabi.apk**](releases/Sudoku-Ultimatum-1.0.3-multiabi.apk) (~62 MB) | **v1.0.3** (latest) — universal APK; **armeabi-v7a**, **arm64-v8a**, **x86**, **x86_64**. Changelog: [releases/v1.0.3-github-release-notes.md](releases/v1.0.3-github-release-notes.md). |
 | [**Sudoku-Ultimatum-1.0.2-multiabi.apk**](releases/Sudoku-Ultimatum-1.0.2-multiabi.apk) (~60 MB) | **v1.0.2** — same ABI layout as above.                                                                                                                  |
 
+To **publish this version on GitHub** (tag, release page, attach APK), see [releases/GITHUB_RELEASE.md](releases/GITHUB_RELEASE.md).
+
 **Install:** transfer the APK to your device, enable installing from your file manager or browser if Android asks, then open the file to install.
 
 **Signing:** this build uses the default template keystore suitable for **trying the app** and sideloading. For **Google Play**, build and sign with your own upload key or use [EAS Submit](https://docs.expo.dev/submit/introduction/).

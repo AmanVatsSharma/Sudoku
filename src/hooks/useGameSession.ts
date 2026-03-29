@@ -64,7 +64,7 @@ function buildResumePayload(
 }
 
 export function useGameSession() {
-  const { replaceResume } = usePersistedApp();
+  const { replaceResume, bumpGamesStarted } = usePersistedApp();
 
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [puzzle, setPuzzle] = useState<Board | null>(null);
@@ -195,8 +195,9 @@ export function useGameSession() {
       setDoneRows(new Set());
       setDoneCols(new Set());
       setDoneBoxes(new Set());
+      bumpGamesStarted();
     },
-    [replaceResume],
+    [bumpGamesStarted, replaceResume],
   );
 
   const continueFromResume = useCallback((r: ResumeStateV1) => {

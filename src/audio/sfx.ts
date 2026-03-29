@@ -10,6 +10,15 @@ const SOURCES: Record<SfxId, number> = {
   win: require('../../assets/sounds/win.wav'),
 };
 
+/** Master trim per clip (0–1); keeps SFX felt but easy on the ears. */
+const PLAYBACK_VOLUME: Record<SfxId, number> = {
+  tap: 0.52,
+  place: 0.58,
+  error: 0.48,
+  hint: 0.54,
+  win: 0.62,
+};
+
 let sfxEnabled = true;
 let audioModeReady = false;
 let loadPromise: Promise<void> | null = null;
@@ -36,6 +45,7 @@ async function loadAll(): Promise<void> {
     const sound = new Audio.Sound();
     await sound.loadAsync(SOURCES[id]);
     await sound.setIsLoopingAsync(false);
+    await sound.setVolumeAsync(PLAYBACK_VOLUME[id]);
     sounds[id] = sound;
   }
 }

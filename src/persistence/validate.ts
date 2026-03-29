@@ -2,7 +2,15 @@ import type { AccentId } from '../theme/tokens';
 import { isValidSolvedBoard } from '../game/engine';
 import type { Board, Difficulty } from '../game/types';
 
-import type { AppPersisted, AppPersistedV1, AppPersistedV2Disk, ResumeStateV1, SolveHistoryEntry } from './schema';
+import type {
+  AppPersisted,
+  AppPersistedV1,
+  AppPersistedV2Disk,
+  GameBranchSnapshotV1,
+  NumberPadMode,
+  ResumeStateV1,
+  SolveHistoryEntry,
+} from './schema';
 import { PERSISTENCE_VERSION, defaultPersisted, defaultSettings } from './schema';
 
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard', 'expert', 'ultimatum'];
@@ -23,6 +31,8 @@ function validBoard(b: unknown): b is Board {
   return true;
 }
 
+const NUMBER_PAD_MODES = new Set<NumberPadMode>(['floating', 'bottom']);
+
 function validNotes(n: unknown): boolean {
   if (!Array.isArray(n) || n.length !== 9) return false;
   for (const row of n) {
@@ -32,6 +42,25 @@ function validNotes(n: unknown): boolean {
     }
   }
   return true;
+}
+
+function validateBranches(raw: unknown): GameBranchSnapshotV1[] | null {
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > 24) return null;
+  const out: GameBranchSnapshotV1[] = [];
+  for (const item of raw) {
+    if (!isRecord(item)) return null;
+    if (typeof item.name !== 'string' || item.name.length > 48) return null;
+    if (typeof item.isMain !== 'boolean') return null;
+    if (!validBoard(item.board) || !validNotes(item.notes)) return null;
+    out.push({
+      name: item.name,
+      isMain: item.isMain,
+      board: item.board as import('../game/types').Board,
+      notes: item.notes as import('../game/types').NotesGrid,
+    });
+  }
+  if (out.filter((b) => b.isMain).length !== 1) return null;
+  return out;
 }
 
 export function validateResume(raw: unknown): ResumeStateV1 | null {
@@ -69,7 +98,27 @@ export function validateResume(raw: unknown): ResumeStateV1 | null {
     if (!isRecord(h) || !validBoard(h.board) || !validNotes(h.notes)) return null;
     hist.push({ board: h.board as Board, notes: h.notes as import('../game/types').NotesGrid });
   }
-  return {
+
+  const branches = validateBranches(raw.branches);
+  let activeBranch = typeof raw.activeBranch === 'number' ? Math.floor(raw.activeBranch) : 0;
+  const showBranches = typeof raw.showBranches === 'boolean' ? raw.showBranches : false;
+  if (branches) {
+    if (activeBranch < 0 || activeBranch >= branches.length) activeBranch = 0;
+  } else {
+    activeBranch = 0;
+  }
+
+  const consecutiveCorrect =
+    typeof raw.consecutiveCorrect === 'number'
+      ? Math.max(0, Math.min(99, Math.floor(raw.consecutiveCorrect)))
+      : 0;
+  const flowState = typeof raw.flowState === 'boolean' ? raw.flowState : false;
+  const flowSecondsLeft =
+    typeof raw.flowSecondsLeft === 'number'
+      ? Math.max(0, Math.min(120, Math.floor(raw.flowSecondsLeft)))
+      : 0;
+
+  const base: ResumeStateV1 = {
     diff: diff as Difficulty,
     puzzle,
     solution,
@@ -82,11 +131,27 @@ export function validateResume(raw: unknown): ResumeStateV1 | null {
     history: hist,
     noteMode: raw.noteMode,
   };
+
+  if (branches) {
+    base.branches = branches;
+    base.activeBranch = activeBranch;
+    base.showBranches = showBranches;
+  }
+  base.consecutiveCorrect = consecutiveCorrect;
+  base.flowState = flowState;
+  base.flowSecondsLeft = flowSecondsLeft;
+
+  return base;
 }
 
 function sanitizeSettings(s: unknown): AppPersisted['settings'] {
   const d = defaultSettings();
   if (!isRecord(s)) return d;
+  const pad =
+    typeof s.numberPadMode === 'string' && NUMBER_PAD_MODES.has(s.numberPadMode as NumberPadMode)
+      ? (s.numberPadMode as NumberPadMode)
+      : d.numberPadMode;
+
   return {
     dark: typeof s.dark === 'boolean' ? s.dark : d.dark,
     accent:
@@ -99,6 +164,10 @@ function sanitizeSettings(s: unknown): AppPersisted['settings'] {
     showClock: typeof s.showClock === 'boolean' ? s.showClock : d.showClock,
     dailyReminder:
       typeof s.dailyReminder === 'boolean' ? s.dailyReminder : d.dailyReminder,
+    blockBad: typeof s.blockBad === 'boolean' ? s.blockBad : d.blockBad,
+    numberPadMode: pad,
+    soundEffects:
+      typeof s.soundEffects === 'boolean' ? s.soundEffects : d.soundEffects,
   };
 }
 
@@ -231,7 +300,7 @@ export function normalizePersisted(raw: unknown): AppPersisted {
     }
   }
 
-  if (raw.v !== 3) return base;
+  if (raw.v !== 3 && raw.v !== 4) return base;
 
   const xp = typeof raw.xp === 'number' && raw.xp >= 0 ? Math.floor(raw.xp) : 0;
   const calendarStreak =

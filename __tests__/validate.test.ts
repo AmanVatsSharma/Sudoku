@@ -20,7 +20,7 @@ describe('normalizePersisted', () => {
       },
       resume: null,
     });
-    expect(out.v).toBe(3);
+    expect(out.v).toBe(4);
     expect(out.calendarStreak).toBe(4);
     expect(out.lastWinCalendarYmd).toBeNull();
     expect(out.solves).toBe(2);
@@ -28,6 +28,8 @@ describe('normalizePersisted', () => {
     expect(out.totalWinSeconds).toBe(0);
     expect(out.flawlessWins).toBe(0);
     expect(out.noHintWins).toBe(0);
+    expect(out.settings.blockBad).toBe(false);
+    expect(out.settings.numberPadMode).toBe('bottom');
   });
 
   it('migrates v2 to v3 with default stats fields', () => {
@@ -51,7 +53,7 @@ describe('normalizePersisted', () => {
       },
       resume: null,
     });
-    expect(out.v).toBe(3);
+    expect(out.v).toBe(4);
     expect(out.xp).toBe(200);
     expect(out.solves).toBe(5);
     expect(out.gamesStarted).toBe(0);

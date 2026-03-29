@@ -1,7 +1,16 @@
 import type { AccentId } from '../theme/tokens';
 import type { Board, Difficulty, NotesGrid } from '../game/types';
 
-export const PERSISTENCE_VERSION = 3 as const;
+export const PERSISTENCE_VERSION = 4 as const;
+
+export type NumberPadMode = 'floating' | 'bottom';
+
+export type GameBranchSnapshotV1 = {
+  name: string;
+  isMain: boolean;
+  board: Board;
+  notes: NotesGrid;
+};
 
 export type SolveHistoryEntry = {
   diff: Difficulty;
@@ -25,6 +34,13 @@ export type ResumeStateV1 = {
   timeSeconds: number;
   history: { board: Board; notes: NotesGrid }[];
   noteMode: boolean;
+  /** Hypothesis branches; when absent, treat `board`/`notes` as Main only. */
+  branches?: GameBranchSnapshotV1[];
+  activeBranch?: number;
+  showBranches?: boolean;
+  consecutiveCorrect?: number;
+  flowState?: boolean;
+  flowSecondsLeft?: number;
 };
 
 export type AppSettingsV1 = {
@@ -36,6 +52,11 @@ export type AppSettingsV1 = {
   showClock: boolean;
   /** Local notification: one randomized reminder per day (native only). */
   dailyReminder: boolean;
+  /** When true, illegal pencil marks are blocked (with warning). */
+  blockBad: boolean;
+  numberPadMode: NumberPadMode;
+  /** Short UI sounds during play (bundled SFX). */
+  soundEffects: boolean;
 };
 
 export type AppPersistedV1 = {
@@ -93,6 +114,9 @@ export function defaultSettings(): AppSettingsV1 {
     autoRm: true,
     showClock: true,
     dailyReminder: false,
+    blockBad: false,
+    numberPadMode: 'bottom',
+    soundEffects: true,
   };
 }
 

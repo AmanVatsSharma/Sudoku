@@ -1,7 +1,8 @@
 import { AppState, type AppStateStatus } from 'react-native';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { usePersistedApp } from '../context/AppPersistProvider';
+import { playSfx } from '../audio/sfx';
 import {
   safeImpactLight,
   safeImpactMedium,
@@ -13,14 +14,25 @@ import {
   cloneBoard,
   cloneNotes,
   emptyNotes,
+  fillAllCandidateNotes,
+  findContradiction,
   generatePuzzle,
+  getCandidates,
   isConflict,
+  isLegalCandidate,
   toggleNote,
 } from '../game/engine';
 import type { Board, Difficulty, NotesGrid } from '../game/types';
-import type { ResumeStateV1 } from '../persistence/schema';
+import type { GameBranchSnapshotV1, ResumeStateV1 } from '../persistence/schema';
 
 export type CellSelection = readonly [number, number];
+
+export type GameBranchData = {
+  name: string;
+  isMain: boolean;
+  branchBoard: Board;
+  branchNotes: NotesGrid;
+};
 
 type HistoryEntry = { board: Board; notes: NotesGrid };
 
@@ -32,46 +44,53 @@ function keyForCell(r: number, c: number): string {
   return `${r}-${c}`;
 }
 
-function buildResumePayload(
-  difficulty: Difficulty,
-  puzzle: Board,
-  solution: Board,
-  given: boolean[][],
-  board: Board,
-  notes: NotesGrid,
-  mistakes: number,
-  hintsUsed: number,
-  timeSeconds: number,
-  history: HistoryEntry[],
-  noteMode: boolean,
-): ResumeStateV1 {
+function snapshotToBranch(s: GameBranchSnapshotV1): GameBranchData {
   return {
-    diff: difficulty,
-    puzzle: cloneBoard(puzzle),
-    solution: cloneBoard(solution),
-    given: given.map((row) => [...row]),
-    board: cloneBoard(board),
-    notes: cloneNotes(notes),
-    mistakes,
-    hintsUsed,
-    timeSeconds,
-    history: history.map((h) => ({
-      board: cloneBoard(h.board),
-      notes: cloneNotes(h.notes),
-    })),
-    noteMode,
+    name: s.name,
+    isMain: s.isMain,
+    branchBoard: cloneBoard(s.board),
+    branchNotes: cloneNotes(s.notes),
   };
 }
 
-export function useGameSession() {
+function branchToSnapshot(b: GameBranchData): GameBranchSnapshotV1 {
+  return {
+    name: b.name,
+    isMain: b.isMain,
+    board: cloneBoard(b.branchBoard),
+    notes: cloneNotes(b.branchNotes),
+  };
+}
+
+function mainBranchFrom(board: Board, notes: NotesGrid): GameBranchData {
+  return {
+    name: 'Main',
+    isMain: true,
+    branchBoard: cloneBoard(board),
+    branchNotes: cloneNotes(notes),
+  };
+}
+
+export type GameSessionOptions = {
+  onFlowEnter?: () => void;
+  onBranchCreated?: () => void;
+};
+
+export function useGameSession(opts: GameSessionOptions = {}) {
+  const optsRef = useRef(opts);
+  optsRef.current = opts;
+
   const { replaceResume, bumpGamesStarted } = usePersistedApp();
 
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [puzzle, setPuzzle] = useState<Board | null>(null);
   const [solution, setSolution] = useState<Board | null>(null);
   const [given, setGiven] = useState<boolean[][] | null>(null);
-  const [board, setBoard] = useState<Board | null>(null);
-  const [notes, setNotes] = useState<NotesGrid | null>(null);
+  const [branches, setBranches] = useState<GameBranchData[] | null>(null);
+  const [activeBranchIdx, setActiveBranchIdx] = useState(0);
+  const activeBranchIdxRef = useRef(0);
+  activeBranchIdxRef.current = activeBranchIdx;
+
   const [selection, setSelection] = useState<CellSelection | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [noteMode, setNoteMode] = useState(false);
@@ -84,11 +103,24 @@ export function useGameSession() {
   const [doneRows, setDoneRows] = useState(() => new Set<number>());
   const [doneCols, setDoneCols] = useState(() => new Set<number>());
   const [doneBoxes, setDoneBoxes] = useState(() => new Set<string>());
+  const [showBranchesDrawer, setShowBranchesDrawer] = useState(false);
+
+  const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
+  const [flowState, setFlowState] = useState(false);
+  const [flowSecondsLeft, setFlowSecondsLeft] = useState(0);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const runningRef = useRef(false);
   runningRef.current = running;
+
+  const board = branches?.[activeBranchIdx]?.branchBoard ?? null;
+  const notes = branches?.[activeBranchIdx]?.branchNotes ?? null;
+
+  const activeBranch = branches?.[activeBranchIdx] ?? null;
+  const isOnHypothesisBranch = activeBranch != null && !activeBranch.isMain;
+
+  const contradiction = useMemo(() => (board ? findContradiction(board) : null), [board]);
 
   useEffect(() => {
     const onChange = (s: AppStateStatus) => {
@@ -98,12 +130,70 @@ export function useGameSession() {
     return () => sub.remove();
   }, []);
 
+  useEffect(() => {
+    if (!flowState || !running || paused) return;
+    const id = setInterval(() => {
+      setFlowSecondsLeft((s) => {
+        if (s <= 1) {
+          setFlowState(false);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [flowState, running, paused]);
+
   const clearResumeTimer = () => {
     if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
     resumeTimerRef.current = null;
   };
 
-  const scheduleResumeSave = useCallback(
+  const buildResumePayload = useCallback(
+    (
+      nextBranches: GameBranchData[],
+      nextActiveIdx: number,
+      nextHistory: HistoryEntry[],
+      nextNoteMode: boolean,
+      nextMistakes: number,
+      nextHints: number,
+      nextTime: number,
+      nextShowDrawer: boolean,
+      nextConsecutive: number,
+      nextFlow: boolean,
+      nextFlowSec: number,
+    ): ResumeStateV1 => {
+      if (!puzzle || !solution || !given) {
+        throw new Error('buildResumePayload: missing puzzle');
+      }
+      const active = nextBranches[nextActiveIdx]!;
+      return {
+        diff: difficulty,
+        puzzle: cloneBoard(puzzle),
+        solution: cloneBoard(solution),
+        given: given.map((row) => [...row]),
+        board: cloneBoard(active.branchBoard),
+        notes: cloneNotes(active.branchNotes),
+        mistakes: nextMistakes,
+        hintsUsed: nextHints,
+        timeSeconds: nextTime,
+        history: nextHistory.map((h) => ({
+          board: cloneBoard(h.board),
+          notes: cloneNotes(h.notes),
+        })),
+        noteMode: nextNoteMode,
+        branches: nextBranches.length > 1 ? nextBranches.map(branchToSnapshot) : undefined,
+        activeBranch: nextActiveIdx,
+        showBranches: nextShowDrawer,
+        consecutiveCorrect: nextConsecutive,
+        flowState: nextFlow,
+        flowSecondsLeft: nextFlowSec,
+      };
+    },
+    [difficulty, given, puzzle, solution],
+  );
+
+  const scheduleResumeSaveFull = useCallback(
     (payload: ResumeStateV1) => {
       clearResumeTimer();
       resumeTimerRef.current = setTimeout(() => {
@@ -178,10 +268,9 @@ export function useGameSession() {
       }
       setPuzzle(p!);
       setSolution(s!);
-      setBoard(p!.map((r) => [...r]));
-
       setGiven(buildGiven(p!));
-      setNotes(emptyNotes());
+      setBranches([mainBranchFrom(p!, emptyNotes())]);
+      setActiveBranchIdx(0);
       setSelection(null);
       setHistory([]);
       setNoteMode(false);
@@ -195,6 +284,10 @@ export function useGameSession() {
       setDoneRows(new Set());
       setDoneCols(new Set());
       setDoneBoxes(new Set());
+      setShowBranchesDrawer(false);
+      setConsecutiveCorrect(0);
+      setFlowState(false);
+      setFlowSecondsLeft(0);
       bumpGamesStarted();
     },
     [bumpGamesStarted, replaceResume],
@@ -206,8 +299,17 @@ export function useGameSession() {
     setPuzzle(cloneBoard(r.puzzle));
     setSolution(cloneBoard(r.solution));
     setGiven(r.given.map((row) => [...row]));
-    setBoard(cloneBoard(r.board));
-    setNotes(cloneNotes(r.notes));
+    if (r.branches?.length) {
+      setBranches(r.branches.map(snapshotToBranch));
+      setActiveBranchIdx(
+        r.activeBranch != null && r.activeBranch >= 0 && r.activeBranch < r.branches.length
+          ? r.activeBranch
+          : 0,
+      );
+    } else {
+      setBranches([mainBranchFrom(r.board, r.notes)]);
+      setActiveBranchIdx(0);
+    }
     setSelection(null);
     setHistory(r.history.map((h) => ({ board: cloneBoard(h.board), notes: cloneNotes(h.notes) })));
     setNoteMode(r.noteMode);
@@ -220,23 +322,40 @@ export function useGameSession() {
     setDoneRows(new Set());
     setDoneCols(new Set());
     setDoneBoxes(new Set());
+    setShowBranchesDrawer(r.showBranches ?? false);
+    setConsecutiveCorrect(r.consecutiveCorrect ?? 0);
+    setFlowState(r.flowState ?? false);
+    setFlowSecondsLeft(r.flowSecondsLeft ?? 0);
   }, []);
 
+  const patchActiveBranch = useCallback(
+    (fn: (b: GameBranchData) => GameBranchData) => {
+      setBranches((prev) => {
+        if (!prev) return prev;
+        const idx = activeBranchIdxRef.current;
+        const next = [...prev];
+        next[idx] = fn(next[idx]!);
+        return next;
+      });
+    },
+    [],
+  );
+
   const exitToMenu = useCallback(() => {
-    if (puzzle && solution && given && board && notes) {
-      replaceResume(
+    if (puzzle && solution && given && branches) {
+      scheduleResumeSaveFull(
         buildResumePayload(
-          difficulty,
-          puzzle,
-          solution,
-          given,
-          board,
-          notes,
+          branches,
+          activeBranchIdx,
+          history,
+          noteMode,
           mistakes,
           hintsUsed,
           timeSeconds,
-          history,
-          noteMode,
+          showBranchesDrawer,
+          consecutiveCorrect,
+          flowState,
+          flowSecondsLeft,
         ),
       );
     }
@@ -245,21 +364,25 @@ export function useGameSession() {
     setPuzzle(null);
     setSolution(null);
     setGiven(null);
-    setBoard(null);
-    setNotes(null);
+    setBranches(null);
+    setActiveBranchIdx(0);
     setSelection(null);
     setHistory([]);
   }, [
-    board,
-    difficulty,
+    activeBranchIdx,
+    branches,
+    buildResumePayload,
+    consecutiveCorrect,
+    flowSecondsLeft,
+    flowState,
     given,
     hintsUsed,
     history,
     mistakes,
     noteMode,
-    notes,
     puzzle,
-    replaceResume,
+    scheduleResumeSaveFull,
+    showBranchesDrawer,
     solution,
     timeSeconds,
   ]);
@@ -272,35 +395,62 @@ export function useGameSession() {
         solution: Board;
         given: boolean[][];
         autoRm: boolean;
-        onSolved: (meta?: { mistakes?: number; hintsUsed?: number }) => void;
+        blockBad: boolean;
+        onSolved: (meta?: {
+          mistakes?: number;
+          hintsUsed?: number;
+          flowBonus?: boolean;
+        }) => void;
+        onNoteWarn?: (message: string) => void;
       },
     ) => {
-      if (!selection || !board || !notes) return;
+      if (!selection || !board || !notes || !branches) return;
       const [r, c] = selection;
       if (opts.given[r]![c]) return;
 
       if (noteMode && num !== 0) {
+        if (!isLegalCandidate(board, r, c, num)) {
+          let reason = 'that unit';
+          for (let i = 0; i < 9; i++) {
+            if (board[r]![i] === num && i !== c) {
+              reason = `row ${r + 1}`;
+              break;
+            }
+            if (board[i]![c] === num && i !== r) {
+              reason = `column ${c + 1}`;
+              break;
+            }
+          }
+          opts.onNoteWarn?.(`${num} is not valid — clash in ${reason}`);
+          if (opts.blockBad) return;
+        }
+
         const histEntry = { board: cloneBoard(board), notes: cloneNotes(notes) };
         const nextHist = [...history.slice(-99), histEntry];
         setHistory(nextHist);
         const nn = cloneNotes(notes);
-        const mask = nn[r]![c]!;
-        nn[r]![c] = toggleNote(mask, num);
-        setNotes(nn);
+        nn[r]![c] = toggleNote(nn[r]![c]!, num);
+        patchActiveBranch((br) => ({
+          ...br,
+          branchNotes: nn,
+        }));
         void safeSelectionAsync();
-        scheduleResumeSave(
+        playSfx('tap');
+        scheduleResumeSaveFull(
           buildResumePayload(
-            difficulty,
-            opts.puzzle,
-            opts.solution,
-            opts.given,
-            board,
-            nn,
+            branches.map((b, i) =>
+              i === activeBranchIdx ? { ...b, branchNotes: nn } : b,
+            ),
+            activeBranchIdx,
+            nextHist,
+            noteMode,
             mistakes,
             hintsUsed,
             timeSeconds,
-            nextHist,
-            noteMode,
+            showBranchesDrawer,
+            consecutiveCorrect,
+            flowState,
+            flowSecondsLeft,
           ),
         );
         return;
@@ -317,17 +467,27 @@ export function useGameSession() {
       }
       if (num !== 0) nn[r]![c] = 0;
 
+      const willSolve =
+        nb.every((row) => row.every((v) => v !== 0)) &&
+        nb.every((row, ri) => row.every((v, ci) => v === opts.solution[ri]![ci]));
+
       let nextMistakes = mistakes;
+      let nextConsecutive = consecutiveCorrect;
+      let nextFlow = flowState;
+      let nextFlowSec = flowSecondsLeft;
+
       if (num !== 0 && num !== opts.solution[r]![c]) {
         nextMistakes = mistakes + 1;
         setMistakes(nextMistakes);
         void safeNotificationError();
-      }
-
-      setBoard(nb);
-      setNotes(nn);
-
-      if (num !== 0 && num === opts.solution[r]?.[c]) {
+        playSfx('error');
+        nextConsecutive = 0;
+        nextFlow = false;
+        nextFlowSec = 0;
+        setConsecutiveCorrect(0);
+        setFlowState(false);
+        setFlowSecondsLeft(0);
+      } else if (num !== 0 && num === opts.solution[r]![c]) {
         const k = keyForCell(r, c);
         setFlashSet((p) => new Set([...p, k]));
         setTimeout(() => {
@@ -339,79 +499,120 @@ export function useGameSession() {
         }, 420);
         checkComplete(nb);
         void safeImpactLight();
+        if (!willSolve) playSfx('place');
+        nextConsecutive = consecutiveCorrect + 1;
+        setConsecutiveCorrect(nextConsecutive);
+        if (nextConsecutive >= 5 && !flowState) {
+          nextFlow = true;
+          nextFlowSec = 60;
+          setFlowState(true);
+          setFlowSecondsLeft(60);
+          optsRef.current.onFlowEnter?.();
+        }
       }
 
-      const solved =
-        nb.every((row) => row.every((v) => v !== 0)) &&
-        nb.every((row, ri) => row.every((v, ci) => v === opts.solution[ri]![ci]));
+      const branchesAfter = branches.map((b, i) =>
+        i === activeBranchIdx ? { ...b, branchBoard: nb, branchNotes: nn } : b,
+      );
+      setBranches(branchesAfter);
 
-      if (solved) {
+      if (willSolve) {
         setRunning(false);
         clearResumeTimer();
         replaceResume(null);
-        opts.onSolved({ mistakes: nextMistakes, hintsUsed });
+        opts.onSolved({
+          mistakes: nextMistakes,
+          hintsUsed,
+          flowBonus: nextFlow,
+        });
         return;
       }
 
-      scheduleResumeSave(
+      scheduleResumeSaveFull(
         buildResumePayload(
-          difficulty,
-          opts.puzzle,
-          opts.solution,
-          opts.given,
-          nb,
-          nn,
+          branchesAfter,
+          activeBranchIdx,
+          nextHistAfterMove,
+          noteMode,
           nextMistakes,
           hintsUsed,
           timeSeconds,
-          nextHistAfterMove,
-          noteMode,
+          showBranchesDrawer,
+          nextConsecutive,
+          nextFlow,
+          nextFlowSec,
         ),
       );
     },
     [
+      activeBranchIdx,
       board,
+      branches,
+      buildResumePayload,
       checkComplete,
-      difficulty,
-      hintsUsed,
+      consecutiveCorrect,
+      flowSecondsLeft,
+      flowState,
       history,
+      hintsUsed,
       mistakes,
       noteMode,
       notes,
+      patchActiveBranch,
       replaceResume,
-      scheduleResumeSave,
+      scheduleResumeSaveFull,
       selection,
+      showBranchesDrawer,
       timeSeconds,
     ],
   );
 
+  const resetFlowFromUndo = useCallback(() => {
+    setConsecutiveCorrect(0);
+    setFlowState(false);
+    setFlowSecondsLeft(0);
+  }, []);
+
   const undo = useCallback(
-    (ctx: { puzzle: Board; solution: Board; given: boolean[][] }) => {
-      setHistory((h) => {
-        if (!h.length) return h;
-        const last = h[h.length - 1]!;
-        const rest = h.slice(0, -1);
-        setBoard(last.board);
-        setNotes(last.notes);
-        scheduleResumeSave(
-          buildResumePayload(
-            difficulty,
-            ctx.puzzle,
-            ctx.solution,
-            ctx.given,
-            last.board,
-            last.notes,
-            mistakes,
-            hintsUsed,
-            timeSeconds,
-            rest,
-            noteMode,
-          ),
-        );
-        return rest;
-      });
+    (_ctx: { puzzle: Board; solution: Board; given: boolean[][] }) => {
+      if (!history.length || !branches) return;
+      resetFlowFromUndo();
+      const last = history[history.length - 1]!;
+      const rest = history.slice(0, -1);
+      const nextBranches = branches.map((b, i) =>
+        i === activeBranchIdx ? { ...b, branchBoard: last.board, branchNotes: last.notes } : b,
+      );
+      setBranches(nextBranches);
+      setHistory(rest);
+      scheduleResumeSaveFull(
+        buildResumePayload(
+          nextBranches,
+          activeBranchIdx,
+          rest,
+          noteMode,
+          mistakes,
+          hintsUsed,
+          timeSeconds,
+          showBranchesDrawer,
+          0,
+          false,
+          0,
+        ),
+      );
     },
-    [difficulty, hintsUsed, mistakes, noteMode, scheduleResumeSave, timeSeconds],
+    [
+      activeBranchIdx,
+      branches,
+      buildResumePayload,
+      history,
+      mistakes,
+      noteMode,
+      hintsUsed,
+      resetFlowFromUndo,
+      scheduleResumeSaveFull,
+      showBranchesDrawer,
+      timeSeconds,
+    ],
   );
 
   const applyHint = useCallback(
@@ -419,9 +620,13 @@ export function useGameSession() {
       puzzle: Board;
       solution: Board;
       given: boolean[][];
-      onSolved: (meta?: { mistakes?: number; hintsUsed?: number }) => void;
+      onSolved: (meta?: {
+        mistakes?: number;
+        hintsUsed?: number;
+        flowBonus?: boolean;
+      }) => void;
     }) => {
-      if (hintsUsed >= 3 || !selection || !board || !notes) return;
+      if (hintsUsed >= 3 || !selection || !board || !notes || !branches) return;
       const [r, c] = selection;
       if (opts.given[r]![c] || board[r]![c] !== 0) return;
 
@@ -434,8 +639,28 @@ export function useGameSession() {
       nb[r]![c] = hintVal;
       const nn = cloneNotes(notes);
       nn[r]![c] = 0;
-      setBoard(nb);
-      setNotes(nn);
+
+      const solvedHint =
+        nb.every((row) => row.every((v) => v !== 0)) &&
+        nb.every((row, ri) => row.every((v, ci) => v === opts.solution[ri]![ci]));
+
+      let nextConsecutive = consecutiveCorrect + 1;
+      let nextFlow = flowState;
+      let nextFlowSec = flowSecondsLeft;
+      setConsecutiveCorrect(nextConsecutive);
+      if (nextConsecutive >= 5 && !flowState) {
+        nextFlow = true;
+        nextFlowSec = 60;
+        setFlowState(true);
+        setFlowSecondsLeft(60);
+        optsRef.current.onFlowEnter?.();
+      }
+
+      const branchesAfter = branches.map((b, i) =>
+        i === activeBranchIdx ? { ...b, branchBoard: nb, branchNotes: nn } : b,
+      );
+      setBranches(branchesAfter);
+
       const nextHints = hintsUsed + 1;
       setHintsUsed(nextHints);
       void safeImpactMedium();
@@ -450,49 +675,266 @@ export function useGameSession() {
       }, 420);
       checkComplete(nb);
 
-      const solved =
-        nb.every((row) => row.every((v) => v !== 0)) &&
-        nb.every((row, ri) => row.every((v, ci) => v === opts.solution[ri]![ci]));
-
-      if (solved) {
+      if (solvedHint) {
         setRunning(false);
         clearResumeTimer();
         replaceResume(null);
-        opts.onSolved({ mistakes, hintsUsed: nextHints });
+        opts.onSolved({ mistakes, hintsUsed: nextHints, flowBonus: nextFlow });
         return;
       }
 
-      scheduleResumeSave(
+      scheduleResumeSaveFull(
         buildResumePayload(
-          difficulty,
-          opts.puzzle,
-          opts.solution,
-          opts.given,
-          nb,
-          nn,
+          branchesAfter,
+          activeBranchIdx,
+          nextHistHint,
+          noteMode,
           mistakes,
           nextHints,
           timeSeconds,
-          nextHistHint,
-          noteMode,
+          showBranchesDrawer,
+          nextConsecutive,
+          nextFlow,
+          nextFlowSec,
         ),
       );
     },
     [
+      activeBranchIdx,
       board,
+      branches,
+      buildResumePayload,
       checkComplete,
-      difficulty,
-      hintsUsed,
+      consecutiveCorrect,
+      flowState,
+      flowSecondsLeft,
       history,
+      hintsUsed,
       mistakes,
       noteMode,
       notes,
       replaceResume,
-      scheduleResumeSave,
+      scheduleResumeSaveFull,
       selection,
+      showBranchesDrawer,
       timeSeconds,
     ],
   );
+
+  const fillAllCandidates = useCallback(() => {
+    if (!board || !branches) return;
+    const nn = fillAllCandidateNotes(board);
+    const nextBranches = branches.map((b, i) =>
+      i === activeBranchIdx ? { ...b, branchNotes: nn } : b,
+    );
+    setBranches(nextBranches);
+    scheduleResumeSaveFull(
+      buildResumePayload(
+        nextBranches,
+        activeBranchIdx,
+        history,
+        noteMode,
+        mistakes,
+        hintsUsed,
+        timeSeconds,
+        showBranchesDrawer,
+        consecutiveCorrect,
+        flowState,
+        flowSecondsLeft,
+      ),
+    );
+  }, [
+    activeBranchIdx,
+    board,
+    branches,
+    buildResumePayload,
+    consecutiveCorrect,
+    flowSecondsLeft,
+    flowState,
+    history,
+    hintsUsed,
+    mistakes,
+    noteMode,
+    scheduleResumeSaveFull,
+    showBranchesDrawer,
+    timeSeconds,
+  ]);
+
+  const createBranch = useCallback(() => {
+    if (!branches || !board || !notes) return;
+    const name = `Branch ${branches.length}`;
+    const copy: GameBranchData = {
+      name,
+      isMain: false,
+      branchBoard: cloneBoard(board),
+      branchNotes: cloneNotes(notes),
+    };
+    const next = [...branches, copy];
+    setBranches(next);
+    setActiveBranchIdx(next.length - 1);
+    setHistory([]);
+    setSelection(null);
+    setShowBranchesDrawer(true);
+    optsRef.current.onBranchCreated?.();
+    scheduleResumeSaveFull(
+      buildResumePayload(
+        next,
+        next.length - 1,
+        [],
+        noteMode,
+        mistakes,
+        hintsUsed,
+        timeSeconds,
+        true,
+        consecutiveCorrect,
+        flowState,
+        flowSecondsLeft,
+      ),
+    );
+  }, [
+    board,
+    branches,
+    buildResumePayload,
+    consecutiveCorrect,
+    flowSecondsLeft,
+    flowState,
+    hintsUsed,
+    mistakes,
+    noteMode,
+    notes,
+    scheduleResumeSaveFull,
+    timeSeconds,
+  ]);
+
+  const switchBranch = useCallback(
+    (idx: number) => {
+      if (!branches || idx < 0 || idx >= branches.length) return;
+      setActiveBranchIdx(idx);
+      setHistory([]);
+      setSelection(null);
+      scheduleResumeSaveFull(
+        buildResumePayload(
+          branches,
+          idx,
+          [],
+          noteMode,
+          mistakes,
+          hintsUsed,
+          timeSeconds,
+          showBranchesDrawer,
+          consecutiveCorrect,
+          flowState,
+          flowSecondsLeft,
+        ),
+      );
+    },
+    [
+      branches,
+      buildResumePayload,
+      consecutiveCorrect,
+      flowSecondsLeft,
+      flowState,
+      hintsUsed,
+      mistakes,
+      noteMode,
+      scheduleResumeSaveFull,
+      showBranchesDrawer,
+      timeSeconds,
+    ],
+  );
+
+  const deleteBranch = useCallback(
+    (idx: number) => {
+      if (!branches || branches.length <= 1 || idx === 0) return;
+      const next = branches.filter((_, i) => i !== idx);
+      let nextIdx = activeBranchIdx;
+      if (activeBranchIdx === idx) nextIdx = 0;
+      else if (activeBranchIdx > idx) nextIdx = activeBranchIdx - 1;
+      setBranches(next);
+      setActiveBranchIdx(nextIdx);
+      setHistory([]);
+      setSelection(null);
+      scheduleResumeSaveFull(
+        buildResumePayload(
+          next,
+          nextIdx,
+          [],
+          noteMode,
+          mistakes,
+          hintsUsed,
+          timeSeconds,
+          showBranchesDrawer,
+          consecutiveCorrect,
+          flowState,
+          flowSecondsLeft,
+        ),
+      );
+    },
+    [
+      activeBranchIdx,
+      branches,
+      buildResumePayload,
+      consecutiveCorrect,
+      flowSecondsLeft,
+      flowState,
+      hintsUsed,
+      mistakes,
+      noteMode,
+      scheduleResumeSaveFull,
+      showBranchesDrawer,
+      timeSeconds,
+    ],
+  );
+
+  const mergeFromBranchIndex = useCallback(
+    (sourceIdx: number) => {
+      if (!branches || sourceIdx === 0 || sourceIdx >= branches.length) return;
+      const src = branches[sourceIdx]!;
+      const next = [...branches];
+      next[0] = {
+        ...next[0]!,
+        branchBoard: cloneBoard(src.branchBoard),
+        branchNotes: cloneNotes(src.branchNotes),
+      };
+      setBranches(next);
+      setActiveBranchIdx(0);
+      setHistory([]);
+      setSelection(null);
+      scheduleResumeSaveFull(
+        buildResumePayload(
+          next,
+          0,
+          [],
+          noteMode,
+          mistakes,
+          hintsUsed,
+          timeSeconds,
+          showBranchesDrawer,
+          consecutiveCorrect,
+          flowState,
+          flowSecondsLeft,
+        ),
+      );
+    },
+    [
+      branches,
+      buildResumePayload,
+      consecutiveCorrect,
+      flowSecondsLeft,
+      flowState,
+      hintsUsed,
+      mistakes,
+      noteMode,
+      scheduleResumeSaveFull,
+      showBranchesDrawer,
+      timeSeconds,
+    ],
+  );
+
+  const mergeToMain = useCallback(() => {
+    if (activeBranchIdx === 0) return;
+    mergeFromBranchIndex(activeBranchIdx);
+  }, [activeBranchIdx, mergeFromBranchIndex]);
 
   const digitRemaining = board
     ? ([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) =>
@@ -519,6 +961,8 @@ export function useGameSession() {
     given,
     board,
     notes,
+    branches,
+    activeBranchIdx,
     selection,
     setSelection,
     noteMode,
@@ -533,17 +977,32 @@ export function useGameSession() {
     doneRows,
     doneCols,
     doneBoxes,
+    showBranchesDrawer,
+    setShowBranchesDrawer,
+    contradiction,
+    isOnHypothesisBranch,
+    consecutiveCorrect,
+    flowState,
+    flowSecondsLeft,
     startNewGame,
     continueFromResume,
     exitToMenu,
     inputDigit,
     undo,
     applyHint,
+    fillAllCandidates,
+    createBranch,
+    switchBranch,
+    deleteBranch,
+    mergeToMain,
+    mergeFromBranchIndex,
     digitRemaining,
     filledCount,
     hasMeaningfulProgress,
     canUndo: history.length > 0,
     isConflict: (r: number, c: number) => (board && board[r]![c] ? isConflict(board, r, c) : false),
+    getCandidatesForCell: (r: number, c: number) =>
+      board ? getCandidates(board, r, c) : [],
   };
 }
 

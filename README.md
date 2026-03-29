@@ -14,15 +14,15 @@ Display name **Sudoku Ultimatum**, Expo slug `sudoku-ultimatum`, Android package
 
 ## Download (Android)
 
-| Artifact                                                                                  | Description                                                            |
-| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| [**Sudoku-Ultimatum-1.0.0-arm64-v8a.apk**](releases/Sudoku-Ultimatum-1.0.0-arm64-v8a.apk) | Release-style APK (**arm64-v8a**). For most modern phones and tablets. |
+| Artifact                                                                                         | Description                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [**Sudoku-Ultimatum-1.0.2-multiabi.apk**](releases/Sudoku-Ultimatum-1.0.2-multiabi.apk) (~58 MB) | **v1.0.2** — universal release APK with **armeabi-v7a**, **arm64-v8a**, **x86**, and **x86_64** native libs (phones, tablets, and common emulators). |
 
 **Install:** transfer the APK to your device, enable installing from your file manager or browser if Android asks, then open the file to install.
 
 **Signing:** this build uses the default template keystore suitable for **trying the app** and sideloading. For **Google Play**, build and sign with your own upload key or use [EAS Submit](https://docs.expo.dev/submit/introduction/).
 
-**Other CPU ABIs:** build locally or with EAS (see [Building](#building) below).
+**Faster local builds:** you can pass `-PreactNativeArchitectures=arm64-v8a` to Gradle for a smaller single-ABI APK during development (not recommended for sharing widely).
 
 ---
 
@@ -79,18 +79,18 @@ Before a release, run `npx expo-doctor` and fix any reported issues.
 
 ## Project layout
 
-| Path                                                         | Role                                             |
-| ------------------------------------------------------------ | ------------------------------------------------ |
-| [`app.config.ts`](app.config.ts)                             | Expo config (name, icons, Android package, etc.) |
-| [`src/App.tsx`](src/App.tsx)                                 | App root                                         |
-| [`src/SudokuApp.tsx`](src/SudokuApp.tsx)                     | Navigation / screen flow                         |
-| [`src/screens/`](src/screens/)                               | Home, game, win                                  |
-| [`src/components/`](src/components/)                         | Grid, modals, toasts, error boundary             |
-| [`src/game/`](src/game/)                                     | Engine, types, achievements                      |
-| [`src/hooks/useGameSession.ts`](src/hooks/useGameSession.ts) | Active game session                              |
-| [`src/persistence/`](src/persistence/)                       | Storage schema and migrations                    |
-| [`assets/`](assets/)                                         | Icons and splash                                 |
-| [`legacy/UltimatumSudoku.jsx`](legacy/UltimatumSudoku.jsx)   | Original one-file web prototype (reference)      |
+| Path                                                         | Role                                                                                                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| [`app.config.ts`](app.config.ts)                             | Expo config (name, icons, Android package, etc.)                                                                                      |
+| [`src/App.tsx`](src/App.tsx)                                 | App root                                                                                                                              |
+| [`src/SudokuApp.tsx`](src/SudokuApp.tsx)                     | Navigation / screen flow                                                                                                              |
+| [`src/screens/`](src/screens/)                               | Home, game, win                                                                                                                       |
+| [`src/components/`](src/components/)                         | Grid, modals, toasts, error boundary                                                                                                  |
+| [`src/game/`](src/game/)                                     | Engine, types, achievements                                                                                                           |
+| [`src/hooks/useGameSession.ts`](src/hooks/useGameSession.ts) | Active game session                                                                                                                   |
+| [`src/persistence/`](src/persistence/)                       | Storage schema and migrations                                                                                                         |
+| [`assets/`](assets/)                                         | Icons, splash, adaptive layers; regenerate via [`scripts/build-assets.py`](scripts/build-assets.py) + `assets/icon-source-master.png` |
+| [`legacy/UltimatumSudoku.jsx`](legacy/UltimatumSudoku.jsx)   | Original one-file web prototype (reference)                                                                                           |
 
 ---
 

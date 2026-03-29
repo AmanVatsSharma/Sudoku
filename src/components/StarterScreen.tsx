@@ -44,7 +44,11 @@ export function StarterScreen({ onContinue }: Props) {
     >
       <StatusBar style="light" />
       <Animated.View style={{ opacity, transform: [{ translateY: slide }], flex: 1 }}>
-        <View style={styles.markWrap} accessibilityRole="image" accessibilityLabel="Sudoku Ultimatum logo mark">
+        <View
+          style={styles.markWrap}
+          accessibilityRole="image"
+          accessibilityLabel="Sudoku Ultimatum logo mark"
+        >
           <View style={styles.markRing}>
             <Text style={styles.markGlyph}>⬡</Text>
           </View>

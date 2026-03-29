@@ -1,6 +1,6 @@
 {
   "name": "sudoku",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Offline Sudoku game (Expo / React Native). Run `npx expo-doctor` before release.",
   "license": "MIT",
   "main": "index.js",

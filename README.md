@@ -16,7 +16,7 @@ Display name **Sudoku Ultimatum**, Expo slug `sudoku-ultimatum`, Android package
 
 | Artifact                                                                                         | Description                                                                                                                                          |
 | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [**Sudoku-Ultimatum-1.0.2-multiabi.apk**](releases/Sudoku-Ultimatum-1.0.2-multiabi.apk) (~58 MB) | **v1.0.2** — universal release APK with **armeabi-v7a**, **arm64-v8a**, **x86**, and **x86_64** native libs (phones, tablets, and common emulators). |
+| [**Sudoku-Ultimatum-1.0.2-multiabi.apk**](releases/Sudoku-Ultimatum-1.0.2-multiabi.apk) (~60 MB) | **v1.0.2** — universal release APK with **armeabi-v7a**, **arm64-v8a**, **x86**, and **x86_64** native libs (phones, tablets, and common emulators). |
 
 **Install:** transfer the APK to your device, enable installing from your file manager or browser if Android asks, then open the file to install.
 

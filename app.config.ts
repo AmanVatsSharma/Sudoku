@@ -29,7 +29,10 @@ const config: ExpoConfig = {
   web: {
     favicon: './assets/favicon.png',
   },
-  plugins: [['expo-system-ui', { userInterfaceStyle: 'automatic' }]],
+  plugins: [
+    ['expo-system-ui', { userInterfaceStyle: 'automatic' }],
+    'expo-notifications',
+  ],
   extra: {
     appVariant: process.env.EXPO_PUBLIC_APP_VARIANT ?? 'development',
   },

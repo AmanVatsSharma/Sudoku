@@ -31,6 +31,8 @@ export type AppSettingsV1 = {
   showErr: boolean;
   autoRm: boolean;
   showClock: boolean;
+  /** Local notification: one randomized reminder per day (native only). */
+  dailyReminder: boolean;
 };
 
 export type AppPersistedV1 = {
@@ -71,6 +73,7 @@ export function defaultSettings(): AppSettingsV1 {
     showErr: true,
     autoRm: true,
     showClock: true,
+    dailyReminder: false,
   };
 }
 

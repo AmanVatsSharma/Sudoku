@@ -30,7 +30,20 @@ For each release:
 
 Add [releases/v$(VERSION)-github-release-notes.md](./) with user-facing changelog text.
 
-## 3. EAS builds
+## 3. Local release APK (Gradle)
+
+Uses the Android SDK from `android/local.properties` (`sdk.dir`, e.g. `/home/amansharma/Android/Sdk`). **React Native / Expo Gradle currently expects JDK 17**, not the default **JDK 25** on newer Fedora—either install `java-17-openjdk-devel` or use a [Temurin 17](https://adoptium.net/) unpack under e.g. `~/.local/jdks/jdk-17`.
+
+```bash
+export ANDROID_HOME="$HOME/Android/Sdk"
+export JAVA_HOME="$HOME/.local/jdks/jdk-17"   # or /usr/lib/jvm/java-17-openjdk
+cd android
+./gradlew assembleRelease
+```
+
+APK: `android/app/build/outputs/apk/release/app-release.apk`. Copy to `releases/Sudoku-Ultimatum-<version>-multiabi.apk` and record `sha256sum` in the release notes.
+
+## 4. EAS builds
 
 Prerequisites: [EAS CLI](https://docs.expo.dev/build/setup/), `eas login`, project configured (`eas build:configure` once).
 
@@ -43,7 +56,7 @@ Profiles are defined in [eas.json](../eas.json): `preview` uses `buildType: "apk
 
 After the build, download the artifact from the Expo dashboard and optionally record **SHA256** in your release notes.
 
-## 4. Manual smoke test (device)
+## 5. Manual smoke test (device)
 
 Minimum:
 
@@ -57,6 +70,6 @@ Minimum:
 
 Optional: second device (different OEM or older API) for notifications and install quirks.
 
-## 5. Play Store notes
+## 6. Play Store notes
 
 Prefer **staged rollout** for production. APK sideload users should install the `preview` APK matching your documented version.

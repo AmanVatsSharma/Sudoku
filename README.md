@@ -16,7 +16,8 @@ Display name **Sudoku Ultimatum**, Expo slug `sudoku-ultimatum`, Android package
 
 | Artifact                                                                                         | Description                                                                                                                                          |
 | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [**Sudoku-Ultimatum-1.0.2-multiabi.apk**](releases/Sudoku-Ultimatum-1.0.2-multiabi.apk) (~60 MB) | **v1.0.2** — universal release APK with **armeabi-v7a**, **arm64-v8a**, **x86**, and **x86_64** native libs (phones, tablets, and common emulators). |
+| [**Sudoku-Ultimatum-1.0.3-multiabi.apk**](releases/Sudoku-Ultimatum-1.0.3-multiabi.apk) (~62 MB) | **v1.0.3** (latest) — universal APK; **armeabi-v7a**, **arm64-v8a**, **x86**, **x86_64**. Changelog: [releases/v1.0.3-github-release-notes.md](releases/v1.0.3-github-release-notes.md). |
+| [**Sudoku-Ultimatum-1.0.2-multiabi.apk**](releases/Sudoku-Ultimatum-1.0.2-multiabi.apk) (~60 MB) | **v1.0.2** — same ABI layout as above.                                                                                                                  |
 
 **Install:** transfer the APK to your device, enable installing from your file manager or browser if Android asks, then open the file to install.
 
@@ -73,7 +74,7 @@ npm run format:check
 CI=true npm test
 ```
 
-Before a release, run `npx expo-doctor` and fix any reported issues.
+Before a release, run **`npm run release:preflight`** (expo-doctor + typecheck + lint + tests) and follow [releases/ANDROID_RELEASE.md](releases/ANDROID_RELEASE.md).
 
 ---
 
@@ -116,7 +117,7 @@ Gameplay runs through **`useGameSession`**; long-term data flows through **`src/
 
 ### EAS (cloud)
 
-Production workflows typically use [EAS Build](https://docs.expo.dev/build/introduction/). For an **APK** for testing or sideloading, after `eas login`:
+See [releases/ANDROID_RELEASE.md](releases/ANDROID_RELEASE.md) for version bumps, manual smoke tests, and commands. [EAS Build](https://docs.expo.dev/build/introduction/) overview: for an **APK** for testing or sideloading, after `eas login`:
 
 ```bash
 eas build --profile preview --platform android

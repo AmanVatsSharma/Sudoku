@@ -16,10 +16,22 @@ type Props = {
   rank: string;
   streak: number;
   solves: number;
+  gamesStarted: number;
+  totalWinSeconds: number;
+  winsByDifficulty: Partial<Record<Difficulty, number>>;
+  flawlessWins: number;
+  noHintWins: number;
   bests: Partial<Record<Difficulty, number>>;
   solvHist: SolveHistoryEntry[];
   unlockedIds: string[];
 };
+
+function formatTotalPlay(seconds: number): string {
+  if (seconds < 3600) return formatTime(seconds);
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return `${h}h ${String(m).padStart(2, '0')}m`;
+}
 
 export function StatsModal({
   visible,
@@ -31,6 +43,11 @@ export function StatsModal({
   rank,
   streak,
   solves,
+  gamesStarted,
+  totalWinSeconds,
+  winsByDifficulty,
+  flawlessWins,
+  noHintWins,
   bests,
   solvHist,
   unlockedIds,
@@ -39,6 +56,8 @@ export function StatsModal({
   const lvXP = xp % XP_PER_LEVEL;
   const lvPct = (lvXP / XP_PER_LEVEL) * 100;
   const unlocked = new Set(unlockedIds);
+  const winRatePct =
+    gamesStarted > 0 ? Math.round((solves / gamesStarted) * 100) : null;
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -68,6 +87,31 @@ export function StatsModal({
               <MiniStat label="Badges" value={String(unlocked.size)} T={T} />
             </View>
 
+            <View style={styles.row3}>
+              <MiniStat label="Started" value={String(gamesStarted)} T={T} />
+              <MiniStat
+                label="Win %"
+                value={winRatePct !== null ? `${winRatePct}%` : '—'}
+                T={T}
+              />
+              <MiniStat label="Playtime" value={formatTotalPlay(totalWinSeconds)} T={T} />
+            </View>
+
+            <View style={styles.row2}>
+              <MiniStat label="Flawless wins" value={String(flawlessWins)} T={T} />
+              <MiniStat label="No-hint wins" value={String(noHintWins)} T={T} />
+            </View>
+
+            <Text style={[styles.sec, { color: T.txM }]}>Wins by difficulty</Text>
+            {(Object.keys(DIFFICULTY_META) as Difficulty[]).map((d) => (
+              <View key={d} style={styles.bestRow}>
+                <Text style={{ color: T.txt, fontWeight: '700' }}>{DIFFICULTY_META[d].label}</Text>
+                <Text style={{ color: T.acc, fontWeight: '700' }}>
+                  {winsByDifficulty[d] !== undefined ? String(winsByDifficulty[d]) : '0'}
+                </Text>
+              </View>
+            ))}
+
             <Text style={[styles.sec, { color: T.txM }]}>Best times</Text>
             {(Object.keys(DIFFICULTY_META) as Difficulty[]).map((d) => {
               const best = bests[d];
@@ -91,9 +135,14 @@ export function StatsModal({
                 <View key={i} style={styles.histRow}>
                   <Text style={{ color: T.txt, fontWeight: '600' }}>
                     {DIFFICULTY_META[h.diff].label}
+                    {h.grade ? (
+                      <Text style={{ color: T.acc }}> · {h.grade}</Text>
+                    ) : null}
                   </Text>
                   <Text style={{ color: T.txM }}>
-                    {h.time} · ✕{h.mistakes} · +{h.xp} XP
+                    {h.time} · ✕{h.mistakes}
+                    {h.hintsUsed !== undefined ? ` · ◈${h.hintsUsed}` : ''}
+                    {h.runScore !== undefined ? ` · ${h.runScore} pts` : ''} · +{h.xp} XP
                   </Text>
                 </View>
               ))
@@ -178,6 +227,7 @@ const styles = StyleSheet.create({
   bar: { height: 6, borderRadius: 3, marginTop: 8, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 3 },
   row3: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  row2: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   mini: {
     flex: 1,
     borderWidth: 1,

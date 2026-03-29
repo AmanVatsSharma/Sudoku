@@ -9,6 +9,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { StatsModal } from './components/StatsModal';
 import { usePersistedApp, useProfile } from './context/AppPersistProvider';
 import { calcXP } from './game/constants';
+import { computeRunScore } from './game/runScore';
 import type { AchievementRarity } from './game/achievements';
 import type { Difficulty } from './game/types';
 import { useGameSession } from './hooks/useGameSession';
@@ -33,6 +34,11 @@ export function SudokuApp() {
     rank,
     calendarStreak,
     solves,
+    gamesStarted,
+    totalWinSeconds,
+    winsByDifficulty,
+    flawlessWins,
+    noHintWins,
     bests,
     unlockedAchievements,
     solvHist,
@@ -83,6 +89,14 @@ export function SudokuApp() {
       const mistakes = meta?.mistakes ?? game.mistakes;
       const hintsUsed = meta?.hintsUsed ?? game.hintsUsed;
       const xpE = calcXP(game.difficulty, mistakes, hintsUsed, game.timeSeconds);
+      const prevBest = persisted.bests[game.difficulty];
+      const { score: runScore, grade } = computeRunScore({
+        diff: game.difficulty,
+        timeSeconds: game.timeSeconds,
+        mistakes,
+        hintsUsed,
+        personalBestSeconds: prevBest,
+      });
       const granted = applyWin({
         diff: game.difficulty,
         timeSeconds: game.timeSeconds,
@@ -106,10 +120,20 @@ export function SudokuApp() {
         hints: hintsUsed,
         diff: game.difficulty,
         xpEarned: xpE,
+        runScore,
+        grade,
       });
       setTimeout(() => setScreen('win'), 700);
     },
-    [applyWin, game.difficulty, game.hintsUsed, game.mistakes, game.timeSeconds, pushToasts],
+    [
+      applyWin,
+      game.difficulty,
+      game.hintsUsed,
+      game.mistakes,
+      game.timeSeconds,
+      persisted.bests,
+      pushToasts,
+    ],
   );
 
   useEffect(() => {
@@ -191,6 +215,7 @@ export function SudokuApp() {
           rank={rank}
           streak={calendarStreak}
           solves={solves}
+          gamesStarted={gamesStarted}
           bests={bests}
           unlockedCount={unlockedAchievements.length}
         />
@@ -296,6 +321,11 @@ export function SudokuApp() {
         rank={rank}
         streak={calendarStreak}
         solves={solves}
+        gamesStarted={gamesStarted}
+        totalWinSeconds={totalWinSeconds}
+        winsByDifficulty={winsByDifficulty}
+        flawlessWins={flawlessWins}
+        noHintWins={noHintWins}
         bests={bests}
         solvHist={solvHist}
         unlockedIds={unlockedAchievements}

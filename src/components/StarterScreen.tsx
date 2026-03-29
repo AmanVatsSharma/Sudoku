@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const BRAND_BG = '#0c1224';
@@ -41,6 +42,7 @@ export function StarterScreen({ onContinue }: Props) {
       style={[styles.root, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
       accessibilityLabel="App welcome screen"
     >
+      <StatusBar style="light" />
       <Animated.View style={{ opacity, transform: [{ translateY: slide }], flex: 1 }}>
         <View style={styles.markWrap} accessibilityRole="image" accessibilityLabel="Sudoku Ultimatum logo mark">
           <View style={styles.markRing}>

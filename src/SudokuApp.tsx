@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AppState, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -20,6 +20,7 @@ import {
   requestDailyReminderPermission,
   syncDailyReminders,
 } from './notifications/dailyReminder';
+import { preloadSfx, playSfx, setSfxEnabled } from './audio/sfx';
 import { formatTime, makeTheme } from './theme/tokens';
 
 type Screen = 'home' | 'game' | 'win';
@@ -45,9 +46,55 @@ export function SudokuApp() {
     settings,
     updateSettings,
     applyWin,
+    grantAchievement,
   } = useProfile();
 
-  const game = useGameSession();
+  const pushGrantToast = useCallback((g: {
+    tid: number;
+    title: string;
+    desc: string;
+    xp: number;
+    rarity: AchievementRarity;
+    icon: string;
+  }) => {
+    setToasts((q) => [...q.slice(-2), g]);
+    const tid = g.tid;
+    setTimeout(() => {
+      setToasts((q) => q.filter((x) => x.tid !== tid));
+    }, 3800);
+  }, []);
+
+  const game = useGameSession(
+    useMemo(
+      () => ({
+        onFlowEnter: () => {
+          const g = grantAchievement('flow');
+          if (g)
+            pushGrantToast({
+              tid: g.tid,
+              title: g.title,
+              desc: g.desc,
+              xp: g.xp,
+              rarity: g.rarity,
+              icon: g.icon,
+            });
+        },
+        onBranchCreated: () => {
+          const g = grantAchievement('brancher');
+          if (g)
+            pushGrantToast({
+              tid: g.tid,
+              title: g.title,
+              desc: g.desc,
+              xp: g.xp,
+              rarity: g.rarity,
+              icon: g.icon,
+            });
+        },
+      }),
+      [grantAchievement, pushGrantToast],
+    ),
+  );
   const [screen, setScreen] = useState<Screen>('home');
   const [selectedDiff, setSelectedDiff] = useState<Difficulty>('medium');
   const [winData, setWinData] = useState<WinPayload | null>(null);
@@ -85,10 +132,12 @@ export function SudokuApp() {
   );
 
   const handleSolved = useCallback(
-    (meta?: { mistakes?: number; hintsUsed?: number }) => {
+    (meta?: { mistakes?: number; hintsUsed?: number; flowBonus?: boolean }) => {
+      playSfx('win');
       const mistakes = meta?.mistakes ?? game.mistakes;
       const hintsUsed = meta?.hintsUsed ?? game.hintsUsed;
-      const xpE = calcXP(game.difficulty, mistakes, hintsUsed, game.timeSeconds);
+      const flowBonus = meta?.flowBonus ?? false;
+      const xpE = calcXP(game.difficulty, mistakes, hintsUsed, game.timeSeconds, flowBonus);
       const prevBest = persisted.bests[game.difficulty];
       const { score: runScore, grade } = computeRunScore({
         diff: game.difficulty,
@@ -102,6 +151,7 @@ export function SudokuApp() {
         timeSeconds: game.timeSeconds,
         mistakes,
         hintsUsed,
+        flowBonus,
       });
       pushToasts(
         granted.map((g) => ({
@@ -122,6 +172,7 @@ export function SudokuApp() {
         xpEarned: xpE,
         runScore,
         grade,
+        flowBonus,
       });
       setTimeout(() => setScreen('win'), 700);
     },
@@ -140,6 +191,15 @@ export function SudokuApp() {
     if (!isReady) return;
     void SplashScreen.hideAsync();
   }, [isReady]);
+
+  useEffect(() => {
+    if (!isReady) return;
+    void preloadSfx();
+  }, [isReady]);
+
+  useEffect(() => {
+    setSfxEnabled(S.soundEffects);
+  }, [S.soundEffects]);
 
   useEffect(() => {
     if (!isReady || !starterDone) return;
@@ -232,6 +292,8 @@ export function SudokuApp() {
           hlSame={S.hlSame}
           showErr={S.showErr}
           autoRm={S.autoRm}
+          blockBad={S.blockBad}
+          numberPadMode={S.numberPadMode}
           showClock={S.showClock}
           onHome={() => {
             const leave = () => {
@@ -299,8 +361,14 @@ export function SudokuApp() {
         setShowErr={(v) => updateSettings({ showErr: v })}
         autoRm={S.autoRm}
         setAutoRm={(v) => updateSettings({ autoRm: v })}
+        blockBad={S.blockBad}
+        setBlockBad={(v) => updateSettings({ blockBad: v })}
+        numberPadMode={S.numberPadMode}
+        setNumberPadMode={(v) => updateSettings({ numberPadMode: v })}
         showClock={S.showClock}
         setShowClock={(v) => updateSettings({ showClock: v })}
+        soundEffects={S.soundEffects}
+        setSoundEffects={(v) => updateSettings({ soundEffects: v })}
         dailyReminder={S.dailyReminder}
         onDailyReminderChange={onDailyReminderChange}
         paused={game.paused}

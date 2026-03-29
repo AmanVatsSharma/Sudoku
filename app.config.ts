@@ -3,7 +3,7 @@ import type { ExpoConfig } from 'expo/config';
 const config: ExpoConfig = {
   name: 'Sudoku Ultimatum',
   slug: 'sudoku-ultimatum',
-  version: '1.0.2',
+  version: '1.0.3',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
@@ -18,7 +18,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: 'dev.sudoku.ultimatum',
-    versionCode: 3,
+    versionCode: 4,
     adaptiveIcon: {
       backgroundColor: '#0c1224',
       foregroundImage: './assets/android-icon-foreground.png',

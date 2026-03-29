@@ -1,6 +1,6 @@
 {
   "name": "sudoku",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Offline Sudoku game (Expo / React Native). Run `npx expo-doctor` before release.",
   "license": "MIT",
   "main": "index.js",
@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "jest --watchAll=false"
+    "test": "jest --watchAll=false",
+    "release:preflight": "npx expo-doctor && npm run typecheck && npm run lint && npm test"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.5",
@@ -34,6 +35,13 @@
     "react-native-web": "^0.20.0"
   },
   "private": false,
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": ["expo-av"]
+      }
+    }
+  },
   "devDependencies": {
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "^30.0.0",

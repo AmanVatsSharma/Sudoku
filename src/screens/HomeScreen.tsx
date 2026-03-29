@@ -19,6 +19,7 @@ type Props = {
   rank: string;
   streak: number;
   solves: number;
+  gamesStarted: number;
   bests: Partial<Record<Difficulty, number>>;
   unlockedCount: number;
 };
@@ -38,6 +39,7 @@ export function HomeScreen({
   rank,
   streak,
   solves,
+  gamesStarted,
   bests,
   unlockedCount,
 }: Props) {
@@ -46,6 +48,8 @@ export function HomeScreen({
   const lvXP = xp % 500;
   const lvPct = (lvXP / 500) * 100;
   const dc = dark ? DIFFICULTY_META[selectedDiff].dColor : DIFFICULTY_META[selectedDiff].color;
+  const winRatePct =
+    gamesStarted > 0 ? Math.round((solves / gamesStarted) * 100) : null;
 
   return (
     <View style={[styles.root, { backgroundColor: T.bg, paddingTop: insets.top + 8 }]}>
@@ -92,6 +96,12 @@ export function HomeScreen({
             </View>
           </View>
         </View>
+
+        <Text style={{ color: T.txM, fontSize: 11, fontWeight: '600', textAlign: 'center', marginBottom: 10 }}>
+          {winRatePct !== null
+            ? `Win rate ${winRatePct}% · ${solves}/${gamesStarted} finished`
+            : 'Win rate appears after you start a new game'}
+        </Text>
 
         <View style={styles.row3}>
           <Mini icon="🔥" value={streak} label="Streak" T={T} />

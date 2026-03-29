@@ -1,6 +1,7 @@
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import type { RunGrade } from '../game/runScore';
 import type { Difficulty } from '../game/types';
 import { DIFFICULTY_META, makeTheme, type AccentId } from '../theme/tokens';
 
@@ -11,6 +12,8 @@ export type WinPayload = {
   hints: number;
   diff: Difficulty;
   xpEarned: number;
+  runScore: number;
+  grade: RunGrade;
 };
 
 type Props = {
@@ -61,6 +64,16 @@ export function WinScreen({ dark, accent, win, level, xp, rank, onReplay, onHome
       </Text>
       <Text style={[styles.h, { color: T.txt }]}>Solved!</Text>
       <Text style={[styles.stars, { color: T.yel }]}>{starStr}</Text>
+
+      <View style={[styles.gradeRow, { borderColor: T.bor, backgroundColor: T.bgC }]}>
+        <Text style={[styles.gradeLetter, { color: T.acc }]}>{win.grade}</Text>
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <Text style={{ color: T.txt, fontWeight: '800', fontSize: 15 }}>Run score</Text>
+          <Text style={{ color: T.txM, fontSize: 12, marginTop: 2 }}>
+            {win.runScore.toLocaleString()} pts · grade from time, mistakes & hints
+          </Text>
+        </View>
+      </View>
 
       <View style={[styles.xpBand, { backgroundColor: `${dc}22`, borderColor: `${dc}44` }]}>
         <Text style={{ color: dc, fontSize: 17, fontWeight: '800' }}>
@@ -145,7 +158,17 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   h: { fontSize: 36, fontWeight: '800', textAlign: 'center', letterSpacing: -0.5 },
-  stars: { fontSize: 28, textAlign: 'center', letterSpacing: 4, marginBottom: 18 },
+  stars: { fontSize: 28, textAlign: 'center', letterSpacing: 4, marginBottom: 14 },
+  gradeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  gradeLetter: { fontSize: 44, fontWeight: '900', lineHeight: 48 },
   xpBand: {
     flexDirection: 'row',
     alignItems: 'center',

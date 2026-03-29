@@ -20,6 +20,8 @@ export function emptyNotes(): NotesGrid {
   return Array.from({ length: 9 }, () => Array(9).fill(0) as number[]);
 }
 
+const DIGIT_BIT = (d: number) => 1 << (d - 1);
+
 function canPlace(b: Board, r: number, c: number, n: number): boolean {
   for (let i = 0; i < 9; i++) {
     if (b[r]![i] === n || b[i]![c] === n) return false;
@@ -51,6 +53,46 @@ function candidateDigits(b: Board, r: number, c: number): number[] {
   const out: number[] = [];
   for (let n = 1; n <= 9; n++) if (canPlace(b, r, c, n)) out.push(n);
   return out;
+}
+
+/** Digits that can legally fill cell (r,c) in `board` — empty if cell is already filled. */
+export function getCandidates(board: Board, r: number, c: number): number[] {
+  if (board[r]![c] !== 0) return [];
+  return candidateDigits(board, r, c);
+}
+
+/** First empty cell with zero legal candidates, or null. */
+export function findContradiction(board: Board): readonly [number, number] | null {
+  for (let r = 0; r < 9; r++)
+    for (let c = 0; c < 9; c++)
+      if (board[r]![c] === 0 && getCandidates(board, r, c).length === 0) return [r, c];
+  return null;
+}
+
+export function digitsToNoteMask(digits: readonly number[]): number {
+  let m = 0;
+  for (const d of digits) {
+    if (d >= 1 && d <= 9) m |= DIGIT_BIT(d);
+  }
+  return m;
+}
+
+/** Pencil marks from naked candidates for every empty cell (ignores existing notes). */
+export function fillAllCandidateNotes(board: Board): NotesGrid {
+  const nn = emptyNotes();
+  for (let r = 0; r < 9; r++)
+    for (let c = 0; c < 9; c++) {
+      if (board[r]![c] !== 0) continue;
+      nn[r]![c] = digitsToNoteMask(getCandidates(board, r, c));
+    }
+  return nn;
+}
+
+/** True if `digit` (1–9) is a legal candidate for an empty cell. */
+export function isLegalCandidate(board: Board, r: number, c: number, digit: number): boolean {
+  if (digit < 1 || digit > 9) return false;
+  if (board[r]![c] !== 0) return false;
+  return getCandidates(board, r, c).includes(digit);
 }
 
 export function countSolutions(board: Board, cap: number): number {
@@ -158,8 +200,6 @@ export function boardsEqual(a: Board, b: Board): boolean {
   for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (a[r]![c] !== b[r]![c]) return false;
   return true;
 }
-
-const DIGIT_BIT = (d: number) => 1 << (d - 1);
 
 export function toggleNote(cellMask: number, digit: number): number {
   return cellMask ^ DIGIT_BIT(digit);

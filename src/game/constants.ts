@@ -41,10 +41,12 @@ export function calcXP(
   mistakes: number,
   hints: number,
   timeSeconds: number,
+  flowBonus?: boolean,
 ): number {
   let x = BASE_XP[diff] ?? 80;
   if (mistakes === 0) x = Math.round(x * 1.5);
   if (hints === 0) x = Math.round(x * 1.2);
   if (diff === 'easy' && timeSeconds < 90) x = Math.round(x * 1.3);
+  if (flowBonus) x = Math.round(x * 1.2);
   return x;
 }

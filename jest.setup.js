@@ -2,8 +2,10 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
-jest.mock('./src/audio/sfx', () => ({
+jest.mock('<rootDir>/src/audio/sfx', () => ({
   playSfx: jest.fn(),
+  setSfxEnabled: jest.fn(),
+  preloadSfx: jest.fn(async () => {}),
 }));
 
 jest.mock('expo-notifications', () => ({
